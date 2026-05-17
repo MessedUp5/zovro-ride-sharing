@@ -1,0 +1,407 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Manrope', serif;
+}
+
+body {
+  font-family: 'Manrope', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.rider-home-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column; 
+  padding-top: 60px; 
+  overflow: hidden; 
+  background-color: #f3f3f3;
+  box-sizing: border-box;
+}
+
+.rides-container {
+  display: grid;
+  grid-template-columns: 350px 1fr 450px;
+  height: calc(100vh - 60px); 
+  background: #fff;
+  }
+  
+  .rides-left {
+    padding: 16px;
+    background-color: #f8f8f8;
+  }
+  
+  .get-a-ride-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .get-a-ride-card h2 {
+    font-size: 24px;
+    margin: 0 0 16px 0;
+    font-weight: 700;
+  }
+  
+  /* Promo Badge */
+  .promo-row {
+    background-color: #d1f5d3;
+    padding: 10px 14px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  
+  .promo-text {
+    font-size: 13px;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Location Selection with Vertical Line */
+  .location-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .route-line {
+    position: absolute;
+  left: 9px; 
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  background-color: #eee; 
+  z-index: 1;
+  }
+  
+  .location-row {
+    display: flex;
+  align-items: center;
+  gap: 15px;
+  position: relative;
+  margin-bottom: 5px;
+  }
+  
+  .location-box {
+    background-color: #eee;
+    padding: 14px;
+    border-radius: 8px;
+    flex: 1;
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .blue-icon {
+    color: #276ef1; /* Professional Uber-style Blue */
+    font-size: 18px;
+    width: 20px;
+    display: flex;
+    justify-content: center;
+    z-index: 2;
+    background: white; /* Prevents the route line from showing through the icon */
+    padding: 2px 0;
+  }
+  
+  .add-stop {
+    font-weight: bold;
+    font-size: 20px;
+    background: black;
+    color: white;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  
+  /* Pickup Now and User Selector */
+  .option-item, .user-selector {
+    background-color: #eee;
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 15px;
+    width: fit-content;
+  }
+  
+  .option-item { width: 100%; justify-content: space-between; }
+  
+  .user-selector {
+    border-radius: 20px;
+    padding: 8px 16px;
+  }
+  
+  .chevron {
+    font-size: 18px;
+    margin-left: auto;
+  }
+
+  .trip-summary-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 20px;
+  }
+  
+  /* Center Panel */
+  .rides-center { 
+    padding: 20px 40px; 
+    overflow-y: auto; 
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .rides-center h1 { font-size: 32px; margin-bottom: 8px; }
+  .sub-heading { color: #666; font-weight: 600; margin-bottom: 20px; }
+  
+  /* Ride Cards */
+  .ride-option-card {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 12px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  
+  .ride-option-card:hover { background: #f6f6f6; }
+  .ride-option-card.selected { border-color: #000; }
+  
+  .vehicle-img { width: 80px; margin-right: 20px; }
+  .ride-info { flex: 1; }
+  .ride-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
+  .ride-desc { color: #666; font-size: 14px; margin-top: 4px; }
+  
+  /* Faster Badge */
+  .faster-badge {
+    background: #276ef1;
+    color: white;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  
+  /* Bottom Bar */
+  .request-bar {
+    margin-top: auto;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #eee;
+    background: white;
+  }
+  
+  .request-confirm-btn {
+    background: black;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  /* Map */
+  .rides-right { position: relative; border-radius: 12px; margin: 10px; overflow: hidden; }
+
+  /* Searching Panel Layout */
+.searching-panel {
+  flex: 0 0 450px; /* Takes up the space of left and center combined */
+  padding: 40px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.searching-content h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+/* Loading Dots Animation */
+.loading-dots {
+  display: flex;
+  gap: 5px;
+  margin: 20px 0;
+}
+
+.loading-dots span {
+  width: 10px;
+  height: 10px;
+  background-color: #276ef1;
+  border-radius: 50%;
+  animation: dot-pulse 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* Request Summary Card */
+.request-details-card {
+  border: 1px solid #eee;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.selected-vehicle-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.selected-vehicle-summary img {
+  width: 50px;
+}
+
+/* Cancel Button */
+.cancel-request-btn {
+  width: 100%;
+  padding: 15px;
+  background-color: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancel-request-btn:hover {
+  background-color: #3d3d3d;
+}
+
+.mode-searching .rides-container {
+  display: flex;
+  width: 100%; /* Ensure it spans the full width of the screen */
+  height: calc(100vh - 70px);
+}
+
+.mode-searching .searching-panel {
+  flex: 0 0 400px; /* This stays exactly 400px wide */
+  background: white;
+  padding: 40px;
+  border-right: 1px solid #eee;
+  z-index: 10;
+}
+
+/* Ensure the map fills the rest of the space ONLY during search */
+.mode-searching .rides-right {
+  flex: 1; /* This tells the map: "Take up ALL remaining space on the right" */
+  width: 100%; 
+  height: 100%;
+  position: relative;
+}
+
+.mode-searching .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.pulse-icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* The solid center point */
+.main-dot {
+  width: 14px;
+  height: 14px;
+  background: #276ef1;
+  border-radius: 50%;
+  position: absolute;
+  z-index: 5;
+  box-shadow: 0 0 10px rgba(39, 110, 241, 0.8);
+}
+
+.pulse-ring {
+  border: 2px solid #276ef1;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  position: absolute;
+  opacity: 0;
+  /* 3 second duration makes it travel further without looking too fast */
+  animation: pulse-wave 3s cubic-bezier(0.21, 0.53, 0.56, 0.8) infinite;
+}
+
+.ring-2 { animation-delay: 1s; }
+.ring-3 { animation-delay: 2s; }
+
+@keyframes pulse-wave {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7; /* Becomes visible quickly */
+  }
+  100% {
+    /* Increase this number (e.g., 10.0 or 12.0) to make it travel even further */
+    transform: scale(8.0); 
+    opacity: 0; /* Fades out at the end of the distance */
+  }
+}
+
+@keyframes pulsate-long {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  /* The ring now grows to 4x its size (scale 4.0) */
+  100% {
+    transform: scale(4.0); 
+    opacity: 0;
+  }
+}
+
+@keyframes pulsate {
+  0% { transform: scale(0.1); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.rider-home-wrapper.mode-searching {
+  width: 100vw;
+  overflow-x: hidden;
+}
