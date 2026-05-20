@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import "./RideOptions.css";
 import L from 'leaflet';
+
+// Map Recenter Sub-component
+function MapRecenter({ center }) {
+  const map = useMap();
+  React.useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.panTo(center, { animate: true, duration: 1.5 });
+    }
+  }, [center, map]);
+  return null;
+}
 
 function RideOptions(props) {
   const location = useLocation();
@@ -20,16 +31,8 @@ function RideOptions(props) {
   const [isSearching, setIsSearching] = useState(false);
   const [nearbyDrivers, setNearbyDrivers] = useState([]);
   const [activeRide, setActiveRide] = useState(null);
-
-  // Loading state fallback protection checks
-  if (!pickupLat || !dropLat) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <h2>Setting up ride...</h2>
-        <p>Please wait while we calculate your route.</p>
-      </div>
-    );
-  }
+  const [trackingRoute, setTrackingRoute] = useState([]);
+  const [etaMinutes, setEtaMinutes] = useState(null);
 
   // Haversine fallback formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -71,14 +74,6 @@ function RideOptions(props) {
     fetchDistance();
   }, [pickupLat, pickupLng, dropLat, dropLng]);
 
-  const rates = { Moto: 50, Tuk: 100, Car: 200 };
-  
-  const rides = [
-    { id: "Moto", name: "Moto", price: (roadDistance * rates.Moto).toFixed(2), seats: 1, img: "https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_moto.png" },
-    { id: "Tuk", name: "Tuk", price: (roadDistance * rates.Tuk).toFixed(2), seats: 3, img: "https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_tuktuk.png", faster: true },
-    { id: "Zip", name: "Zip", price: (roadDistance * rates.Car).toFixed(2), seats: 4, img: "https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_uberx.png" },
-  ];
-
   // Dummy nearby vehicles generation
   useEffect(() => {
     if (pickupLat && pickupLng) {
@@ -90,22 +85,6 @@ function RideOptions(props) {
       setNearbyDrivers(drivers);
     }
   }, [pickupLat, pickupLng, selectedRide]);
-
-  const pulseIcon = L.divIcon({
-    className: 'pulse-icon-container',
-    html: `
-      <div class="main-dot"></div>
-      <div class="pulse-ring ring-1"></div>
-      <div class="pulse-ring ring-2"></div>
-      <div class="pulse-ring ring-3"></div>
-    `,
-    iconSize: [20, 20]
-  });
-
-  const driverIcon = L.icon({
-    iconUrl: rides.find(r => r.id === selectedRide)?.img,
-    iconSize: [40, 40],
-  });
 
   // Handle Request Fire
   const handleRideRequest = async () => {
@@ -119,12 +98,12 @@ function RideOptions(props) {
       pickup_lng: pickupLng,
       drop_lat: dropLat,
       drop_lng: dropLng,
-      fare_lkr: currentRide.price 
+      fare_lkr: currentRide?.price || 0
     };
 
     try {
       const token = localStorage.getItem("token"); 
-      const response = await fetch("http://localhost:5000/api/rides/request", {
+      const response = await fetch("https://zovro-ride-sharing.vercel.app/api/rides/request", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +133,7 @@ function RideOptions(props) {
     console.log("Cancelling ride...");
 
     try {
-        const response = await fetch("http://localhost:5000/api/rides/cancel", {
+        const response = await fetch("https://zovro-ride-sharing.vercel.app/api/rides/cancel", {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -168,10 +147,46 @@ function RideOptions(props) {
     }
   };
 
-  // Only handle removal unmount hooks cleanly without resetting searches on start
+  // Real-time tracking route & ETA path calculator
+  useEffect(() => {
+    if (!activeRide || !activeRide.driver_current_lat || !activeRide.driver_current_lng) return;
+  
+    const getTrackingRouteAndETA = async () => {
+      const dLat = parseFloat(activeRide.driver_current_lat);
+      const dLng = parseFloat(activeRide.driver_current_lng);
+  
+      let targetLat = pickupLat;
+      let targetLng = pickupLng;
+  
+      if (activeRide.status === "ongoing") {
+        targetLat = dropLat;
+        targetLng = dropLng;
+      }
+  
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${dLng},${dLat};${targetLng},${targetLat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+  
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+          setTrackingRoute(coordinates);
+  
+          const minutes = Math.ceil(route.duration / 60);
+          setEtaMinutes(minutes);
+        }
+      } catch (err) {
+        console.error("Failed tracking path queries:", err);
+      }
+    };
+  
+    getTrackingRouteAndETA();
+  }, [activeRide?.driver_current_lat, activeRide?.driver_current_lng, activeRide?.status]);
+
+  // Clean up side effect when switching screens
   useEffect(() => {
     return () => {
-      // Safely pulls down searches if the rider ducks out of the screen
       if (isSearching) handleCancelRide();
     };
   }, [isSearching]);
@@ -184,7 +199,7 @@ function RideOptions(props) {
       const fetchRideAndDriverStatus = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await fetch("http://localhost:5000/api/rides/active-ride", {
+          const response = await fetch("https://zovro-ride-sharing.vercel.app/api/rides/active-ride", {
             headers: { "Authorization": `Bearer ${token}` }
           });
           
@@ -193,12 +208,10 @@ function RideOptions(props) {
             
             if (data.ride) {
               setActiveRide(data.ride); 
-              
               if (data.ride.status !== "pending") {
-                setIsSearching(false); // Instantly shut off full pulse search layout to trigger tracking map structure
+                setIsSearching(false); 
               }
             } else if (activeRide && !data.ride) {
-              // If active ride drops off backend unexpectedly, revert status checks gracefully
               setActiveRide(null);
               setIsSearching(false);
             }
@@ -208,7 +221,6 @@ function RideOptions(props) {
         }
       };
 
-      // Initial immediate fire before interval delay hooks activate
       fetchRideAndDriverStatus();
       intervalId = setInterval(fetchRideAndDriverStatus, 3000);
     }
@@ -216,9 +228,46 @@ function RideOptions(props) {
     return () => clearInterval(intervalId);
   }, [isSearching, activeRide?.status]);
 
+  // =========================================================================
+  // HOOK COMPLIANT GUARD RAIL (All hooks safely sit above this check)
+  // =========================================================================
+  if (!pickupLat || !dropLat) {
+    return (
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <h2>Setting up ride...</h2>
+        <p>Please wait while we calculate your route.</p>
+      </div>
+    );
+  }
+
+  // Moved Rates and Options higher up to satisfy leaf icon checks below
+  const rates = { Moto: 50, Tuk: 100, Car: 200 };
+  
+  const rides = [
+    { id: "Moto", name: "Moto", price: (roadDistance * rates.Moto).toFixed(2), seats: 1, img: "https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_moto.png" },
+    { id: "Tuk", name: "Tuk", price: (roadDistance * rates.Tuk).toFixed(2), seats: 3, img: "https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_tuktuk.png", faster: true },
+    { id: "Zip", name: "Zip", price: (roadDistance * rates.Car).toFixed(2), seats: 4, img: "https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_uberx.png" },
+  ];
+
+  // Leaflet custom Icon configurations
+  const pulseIcon = L.divIcon({
+    className: 'pulse-icon-container',
+    html: `
+      <div class="main-dot"></div>
+      <div class="pulse-ring ring-1"></div>
+      <div class="pulse-ring ring-2"></div>
+      <div class="pulse-ring ring-3"></div>
+    `,
+    iconSize: [20, 20]
+  });
+
+  const driverIcon = L.icon({
+    iconUrl: rides.find(r => r.id === selectedRide)?.img || 'https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_moto.png',
+    iconSize: [40, 40],
+  });
 
   // =========================================================================
-  // INTERCEPTOR LAYER: Active Realtime Tracking Screen Render Condition
+  // INTERCEPTOR LAYER: Active Realtime Tracking Screen
   // =========================================================================
   if (activeRide && activeRide.status !== "pending") {
     return (
@@ -226,7 +275,7 @@ function RideOptions(props) {
         <Navbar />
         <div style={{ display: "flex", flex: 1, height: "calc(100vh - 70px)", overflow: "hidden" }}>
           
-          {/* Left Panel: Real-time driver profile matching */}
+          {/* Left Panel */}
           <div style={{ width: "360px", padding: "24px", background: "#ffffff", boxShadow: "4px 0 20px rgba(0,0,0,0.1)", zIndex: 10, display: "flex", flexDirection: "column" }}>
             <div>
               <h2 style={{ fontSize: "24px", fontWeight: "800", color: "#111", margin: "0 0 10px 0" }}>
@@ -235,13 +284,21 @@ function RideOptions(props) {
                 {activeRide.status === "ongoing" && "Trip is Active"}
               </h2>
               
-              <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700", textTransform: "uppercase" }}>
-                Status: {activeRide.status}
-              </span>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "20px" }}>
+                <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700", textTransform: "uppercase" }}>
+                  Status: {activeRide.status}
+                </span>
+
+                {etaMinutes !== null && activeRide.status !== "arrived" && (
+                  <span style={{ background: "#f0fdf4", color: "#16a34a", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700" }}>
+                     ETA: {etaMinutes} mins
+                  </span>
+                )}
+              </div>
 
               <div style={{ marginTop: "24px", padding: "18px", background: "#f8f9fa", borderRadius: "12px", border: "1px solid #eee" }}>
-                <h3 style={{ margin: "0 0 4px 0", fontSize: "18px" }}>👤 {activeRide.driver_name || "Your Assigned Driver"}</h3>
-                <p style={{ margin: "0 0 10px 0", color: "#666" }}>📞 {activeRide.driver_phone || "Contact via system"}</p>
+                <h3 style={{ margin: "0 0 4px 0", fontSize: "18px" }}> {activeRide.driver_name || "Your Assigned Driver"}</h3>
+                <p style={{ margin: "0 0 10px 0", color: "#666" }}> {activeRide.driver_phone || "Contact via system"}</p>
                 <hr style={{ border: "0", borderTop: "1px solid #eef", margin: "10px 0" }} />
                 <p style={{ margin: "0", fontSize: "15px", fontWeight: "600", color: "#222" }}>
                   Fare Protection: <span style={{ color: "#16a34a" }}>LKR {activeRide.fare_lkr}</span>
@@ -249,8 +306,8 @@ function RideOptions(props) {
               </div>
               
               <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <p style={{ fontSize: "14px", margin: "0" }}>📍 <strong>Pickup:</strong> {pickup}</p>
-                <p style={{ fontSize: "14px", margin: "0" }}>🏁 <strong>Drop:</strong> {drop}</p>
+                <p style={{ fontSize: "14px", margin: "0" }}> <strong>Pickup:</strong> {pickup}</p>
+                <p style={{ fontSize: "14px", margin: "0" }}> <strong>Drop:</strong> {drop}</p>
               </div>
             </div>
 
@@ -263,9 +320,8 @@ function RideOptions(props) {
             </button>
           </div>
 
-          {/* Right Panel: Live Map Streaming */}
+          {/* Right Panel */}
           <div style={{ flex: 1, position: "relative" }}>
-            {/* FIX: Handled with unique dynamic keys so Leaflet safely re-renders layers correctly */}
             <MapContainer 
               key={`active-map-${activeRide?.driver_current_lat || 'initial'}`}
               center={[pickupLat, pickupLng]} 
@@ -276,12 +332,28 @@ function RideOptions(props) {
               
               <Marker position={[pickupLat, pickupLng]} /> 
               <Marker position={[dropLat, dropLng]} />
-              
+
+              <MapRecenter center={[
+                activeRide.driver_current_lat ? parseFloat(activeRide.driver_current_lat) : pickupLat,
+                activeRide.driver_current_lng ? parseFloat(activeRide.driver_current_lng) : pickupLng
+              ]} />
+
+              {trackingRoute.length > 0 && (
+                <Polyline 
+                  positions={trackingRoute} 
+                  pathOptions={{ 
+                    color: activeRide.status === "ongoing" ? "#3b82f6" : "#10b981", 
+                    weight: 5, 
+                    opacity: 0.8 
+                  }} 
+                />
+              )}  
+
               {activeRide?.driver_current_lat && activeRide?.driver_current_lng && (
                 <Marker 
                   position={[parseFloat(activeRide.driver_current_lat), parseFloat(activeRide.driver_current_lng)]}
                   icon={L.icon({
-                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png', // Fallback clean vector car CDN pointer
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png', 
                     iconSize: [35, 35]
                   })}
                 >
@@ -297,14 +369,14 @@ function RideOptions(props) {
   }
 
   // =========================================================================
-  // STANDARD SELECTION & SEARCHING MARKUP (Your Original Layout Structures)
+  // STANDARD SELECTION & SEARCHING MARKUP
   // =========================================================================
   return (
     <div className={`rider-home-wrapper ${isSearching ? "mode-searching" : "mode-selection"}`}>
       <Navbar />
       <div className="rides-container">
       {!isSearching ? (
-          <>
+        <>
         <div className="rides-left">
           <div className="get-a-ride-card">
             <h2>Get a ride</h2>

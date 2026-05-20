@@ -37,7 +37,7 @@ useEffect(() => {
 
         // FIX: Route general updates to the profile tracker, leaving trip-location alone
         try {
-          await fetch('http://localhost:5000/api/rides/update-driver-profile-location', {
+          await fetch('https://zovro-ride-sharing.vercel.app/api/rides/update-driver-profile-location', {
             method: 'PATCH',
             headers: { 
               'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ useEffect(() => {
         const { latitude, longitude } = position.coords;
         
         try {
-          await fetch("http://localhost:5000/api/rides/update-trip-location", {
+          await fetch("https://zovro-ride-sharing.vercel.app/api/rides/update-trip-location", {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -99,7 +99,7 @@ useEffect(() => {
       if (!isOnline || !driverCoords || activeRide) return; 
     
       try {
-        const url = `http://localhost:5000/api/rides/pending?lat=${driverCoords.lat}&lng=${driverCoords.lng}`;
+        const url = `https://zovro-ride-sharing.vercel.app/api/rides/pending?lat=${driverCoords.lat}&lng=${driverCoords.lng}`;
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem("token")}`
@@ -140,7 +140,7 @@ const handleAccept = async () => {
       const { latitude, longitude } = position.coords;
   
       // Targets the dynamic ride ID value extracted safely above
-      const response = await fetch(`http://localhost:5000/api/rides/status/${realRideId}`, {
+      const response = await fetch(`https://zovro-ride-sharing.vercel.app/api/rides/status/${realRideId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -191,7 +191,7 @@ const handleAccept = async () => {
 
     try {
       // FIX 6: Target path modified to track against activeRide.id
-      const response = await fetch(`http://localhost:5000/api/rides/status/${activeRide.id}`, {
+      const response = await fetch(`https://zovro-ride-sharing.vercel.app/api/rides/status/${activeRide.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

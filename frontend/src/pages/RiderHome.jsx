@@ -11,6 +11,13 @@ import { useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import RideOptions from "./RideOptions"; // Adjust the path as necessary
 
+function ChangeMapView({ coords }) {
+  const map = useMap();
+  if (coords.lat && coords.lng) {
+    map.setView([coords.lat, coords.lng], 14);
+  }
+  return null;
+}
 
 function RiderHome() {
   const [pickup, setPickup] = useState("");
@@ -141,12 +148,10 @@ useEffect(() => {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       
-      console.log("Found you at:", lat, lng); // Verify this in console
-      setCurrentCoords({ lat, lng });
-      
-      // Update the Map view to your actual house
-      setPickupCoords({ lat, lng }); 
-      fetchLocation(lat, lng);
+      const safeCoords = { lat, lng };
+        setCurrentCoords(safeCoords);
+        setPickupCoords(safeCoords); 
+        fetchLocation(lat, lng);
     },
     (error) => {
       console.error("GPS Error Code:", error.code);
@@ -183,7 +188,7 @@ useEffect(() => {
         setSelectedLatLng({ lat, lng });
   
         fetch(
-          `http://localhost:5000/api/location/reverse?lat=${lat}&lon=${lng}`
+          `https://zovro-ride-sharing.vercel.app/api/location/reverse?lat=${lat}&lon=${lng}`
         )
           .then((res) => res.json())
           .then((data) => {
@@ -208,7 +213,7 @@ useEffect(() => {
   const fetchLocation = async (lat, lng) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/location/reverse?lat=${lat}&lon=${lng}`
+        `https://zovro-ride-sharing.vercel.app/api/location/reverse?lat=${lat}&lon=${lng}`
       );
 
       const data = await res.json();
@@ -232,7 +237,7 @@ setCurrentLocation(fullLocation);
   
     try {
       const res = await fetch(
-        `http://localhost:5000/api/location/search?q=${encodeURIComponent(text)}`
+        `https://zovro-ride-sharing.vercel.app/api/location/search?q=${encodeURIComponent(text)}`
       );
   
       const data = await res.json();
@@ -257,7 +262,7 @@ setCurrentLocation(fullLocation);
       const userId = localStorage.getItem("userId"); // Add this
 
       const response = await axios.post(
-        "http://localhost:5000/api/rides/request",
+        "https://zovro-ride-sharing.vercel.app/api/rides/request",
         {
           user_id: userId, // Pass the ID from storage
           pickup_location: pickup,
