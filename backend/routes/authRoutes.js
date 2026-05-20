@@ -20,6 +20,23 @@ const pool = process.env.DATABASE_URL
       port: 5432,
     });
 
+    // ⚠️ TEMPORARY MAINTENANCE ROUTE: Delete this after running it once!
+router.get("/clear-database-users-completely-now", async (req, res) => {
+  try {
+    // This executes the database truncation cleanly over the backend's secure connection
+    await pool.query("TRUNCATE TABLE users RESTART IDENTITY CASCADE;");
+    
+    res.send(`
+      <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+        <h1 style="color: #10b981;">🚀 Success!</h1>
+        <p style="font-size: 18px; color: #4b5563;">The users table has been completely wiped clean and rows have been removed.</p>
+      </div>
+    `);
+  } catch (err) {
+    res.status(500).send("Database cleanup error: " + err.message);
+  }
+});
+
 // ==========================================
 // REGISTER
 // ==========================================
