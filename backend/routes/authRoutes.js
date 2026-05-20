@@ -105,12 +105,13 @@ router.post("/login", async (req, res) => {
 // FIREBASE LOGIN & AUTO-REGISTRATION
 // ==========================================
 router.post("/login-firebase", async (req, res) => {
-  // Expecting phone_number passed from frontend alongside uid
-  const { firebase_uid, phone_number, name } = req.body; 
+  const { firebase_uid } = req.body;
+
+  // 🟢 ADD THIS DEBUG LINE HERE TO FORCE A FRESH BUILD AND CHECK POOL VALUE
+  console.log("DEBUG POOL OBJECT TYPE:", typeof pool, "Is pool.query present?:", !!pool?.query);
 
   try {
-    // 1. Try to find the user
-    let result = await pool.query(
+    const result = await pool.query(
       "SELECT id, first_name, last_name, email, user_type, firebase_uid FROM users WHERE firebase_uid = $1",
       [firebase_uid]
     );
