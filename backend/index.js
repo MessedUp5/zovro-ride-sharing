@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
-const { Pool } = require('pg');
 
 const app = express();
 
@@ -23,7 +22,6 @@ const server = http.createServer(app);
 
 // Socket.IO setup
 const { Server } = require("socket.io");
-
 const io = new Server(server, {
   cors: {
     origin: "*"
@@ -44,13 +42,11 @@ io.on("connection", (socket) => {
 
   socket.on("driver_location", (data) => {
     const { driverId, latitude, longitude } = data;
-
     drivers[driverId] = {
       socketId: socket.id,
       latitude,
       longitude
     };
-
     io.emit("driver_moved", data);
   });
 
@@ -63,9 +59,13 @@ io.on("connection", (socket) => {
   });
 });
 
-// Start server (ONLY ONCE)
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// ONLY call server.listen if we are running locally on your laptop
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, () => {
+    console.log(`Local development server running on port ${PORT}`);
+  });
+}
 
+// CRUCIAL FOR VERCEL: Export the express app instance
+module.exports = app;
