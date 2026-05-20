@@ -10,7 +10,7 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
-const socket = io("https://zovro-ride-sharing.vercel.app/");
+const socket = io("https://zovro-backend.vercel.app/");
 
 function LiveMap() {
   const [driverPosition, setDriverPosition] = useState([6.9271, 79.8612]);

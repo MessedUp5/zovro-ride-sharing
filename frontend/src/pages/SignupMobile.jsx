@@ -19,7 +19,7 @@ const firebaseConfig = {
 // Add 'role' to the parameters
 const syncWithPostgres = async (firebaseUser, fName, lName, role) => { 
   try {
-    const response = await fetch("https://zovro-ride-sharing.vercel.app/api/auth/register", {
+    const response = await fetch("https://zovro-backend.vercel.app/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

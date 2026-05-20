@@ -103,7 +103,7 @@ function RideOptions(props) {
 
     try {
       const token = localStorage.getItem("token"); 
-      const response = await fetch("https://zovro-ride-sharing.vercel.app/api/rides/request", {
+      const response = await fetch("https://zovro-backend.vercel.app/api/rides/request", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -133,7 +133,7 @@ function RideOptions(props) {
     console.log("Cancelling ride...");
 
     try {
-        const response = await fetch("https://zovro-ride-sharing.vercel.app/api/rides/cancel", {
+        const response = await fetch("https://zovro-backend.vercel.app/api/rides/cancel", {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -199,7 +199,7 @@ function RideOptions(props) {
       const fetchRideAndDriverStatus = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await fetch("https://zovro-ride-sharing.vercel.app/api/rides/active-ride", {
+          const response = await fetch("https://zovro-backend.vercel.app/api/rides/active-ride", {
             headers: { "Authorization": `Bearer ${token}` }
           });
           
