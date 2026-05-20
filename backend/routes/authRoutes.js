@@ -102,24 +102,50 @@ router.post("/login", async (req, res) => {
 });
 
 // ==========================================
-// FIREBASE LOGIN
+// FIREBASE LOGIN & AUTO-REGISTRATION
 // ==========================================
 router.post("/login-firebase", async (req, res) => {
-  const { firebase_uid } = req.body;
+  // Expecting phone_number passed from frontend alongside uid
+  const { firebase_uid, phone_number, name } = req.body; 
 
   try {
-    // Included firebase_uid explicitly in the SELECT query array parameters
-    const result = await pool.query(
+    // 1. Try to find the user
+    let result = await pool.query(
       "SELECT id, first_name, last_name, email, user_type, firebase_uid FROM users WHERE firebase_uid = $1",
       [firebase_uid]
     );
 
+    let user;
+
+    // 2. If user does NOT exist yet, automatically register them!
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found in database" });
+      console.log(`User ${firebase_uid} not found. Creating a new profile record...`);
+      
+      const insertSql = `
+        INSERT INTO users (first_name, last_name, email, password, user_type, phone_number, firebase_uid) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7) 
+        RETURNING id, first_name, last_name, email, user_type, firebase_uid;
+      `;
+
+      // Assign placeholders for details they can fill out later in their profile dashboard
+      const insertValues = [
+        name || "Zovro User", 
+        "", 
+        `${firebase_uid}@zovro.com`, 
+        "firebase_auth_managed", // Dummy password since Firebase handles credentials
+        'rider', 
+        phone_number || "", 
+        firebase_uid
+      ];
+
+      const createResult = await pool.query(insertSql, insertValues);
+      user = createResult.rows[0];
+    } else {
+      // User was found cleanly
+      user = result.rows[0];
     }
 
-    const user = result.rows[0];
-
+    // 3. Issue your standard JWT access session token
     const token = jwt.sign(
       { id: user.id, role: user.user_type },
       process.env.JWT_SECRET || "secretkey",
@@ -130,16 +156,17 @@ router.post("/login-firebase", async (req, res) => {
       token, 
       user: {
         id: user.id,
-        uid: user.firebase_uid, // 🟢 Passed cleanly back down to storage
+        uid: user.firebase_uid,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
         user_type: user.user_type 
       }
     });
+
   } catch (err) {
     console.error("Firebase Login Error:", err.message);
-    res.status(500).json({ error: "Server error during Firebase login" });
+    res.status(500).json({ error: "Server error during Firebase login", details: err.message });
   }
 });
 
