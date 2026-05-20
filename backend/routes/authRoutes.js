@@ -1,8 +1,24 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+
+// 🟢 Bypassing the import caching issue by defining the Pool connection directly:
+const { Pool } = require('pg');
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false // Required for your live Aiven cloud database
+      }
+    })
+  : new Pool({
+      user: 'postgres',
+      host: 'localhost',
+      database: 'zovro_db',
+      password: '1234',
+      port: 5432,
+    });
 
 // ==========================================
 // REGISTER
@@ -13,7 +29,6 @@ router.post("/register", async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Added firebase_uid to RETURNING so it can be mapped cleanly to the frontend user object
     const sql = `
       INSERT INTO users (first_name, last_name, email, password, user_type, phone_number, firebase_uid) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) 
@@ -33,7 +48,6 @@ router.post("/register", async (req, res) => {
     const result = await pool.query(sql, values);
     const registeredUser = result.rows[0];
 
-    // JWT payload uses database integer id
     const token = jwt.sign(
       { id: registeredUser.id, role: registeredUser.user_type },
       process.env.JWT_SECRET || "secretkey",
@@ -45,7 +59,7 @@ router.post("/register", async (req, res) => {
       token: token,
       user: { 
         id: registeredUser.id,
-        uid: registeredUser.firebase_uid, // 🟢 Mapped for frontend compatibility
+        uid: registeredUser.firebase_uid,
         first_name: registeredUser.first_name,
         last_name: registeredUser.last_name,
         email: registeredUser.email,
@@ -88,7 +102,7 @@ router.post("/login", async (req, res) => {
       token, 
       user: {
         id: user.id,
-        uid: user.firebase_uid, // 🟢 Added to resolve "column uid does not exist" type errors on frontend
+        uid: user.firebase_uid,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
@@ -105,9 +119,9 @@ router.post("/login", async (req, res) => {
 // FIREBASE LOGIN & AUTO-REGISTRATION
 // ==========================================
 router.post("/login-firebase", async (req, res) => {
-  const { firebase_uid } = req.body;
+  // 🟢 FIX 1: Pull phone_number and name directly out of req.body if the frontend passes them
+  const { firebase_uid, phone_number, name } = req.body;
 
-  // 🟢 ADD THIS DEBUG LINE HERE TO FORCE A FRESH BUILD AND CHECK POOL VALUE
   console.log("DEBUG POOL OBJECT TYPE:", typeof pool, "Is pool.query present?:", !!pool?.query);
 
   try {
@@ -118,7 +132,6 @@ router.post("/login-firebase", async (req, res) => {
 
     let user;
 
-    // 2. If user does NOT exist yet, automatically register them!
     if (result.rows.length === 0) {
       console.log(`User ${firebase_uid} not found. Creating a new profile record...`);
       
@@ -128,12 +141,12 @@ router.post("/login-firebase", async (req, res) => {
         RETURNING id, first_name, last_name, email, user_type, firebase_uid;
       `;
 
-      // Assign placeholders for details they can fill out later in their profile dashboard
+      // 🟢 FIX 2: Uses the fallback properties safely without crashing Node
       const insertValues = [
         name || "Zovro User", 
         "", 
         `${firebase_uid}@zovro.com`, 
-        "firebase_auth_managed", // Dummy password since Firebase handles credentials
+        "firebase_auth_managed", 
         'rider', 
         phone_number || "", 
         firebase_uid
@@ -142,11 +155,9 @@ router.post("/login-firebase", async (req, res) => {
       const createResult = await pool.query(insertSql, insertValues);
       user = createResult.rows[0];
     } else {
-      // User was found cleanly
       user = result.rows[0];
     }
 
-    // 3. Issue your standard JWT access session token
     const token = jwt.sign(
       { id: user.id, role: user.user_type },
       process.env.JWT_SECRET || "secretkey",
