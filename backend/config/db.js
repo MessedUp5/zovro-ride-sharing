@@ -1,20 +1,21 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-  user: 'postgres',           // Your pgAdmin username
-  host: 'localhost',
-  database: 'zovro_db',       // The DB name we created in pgAdmin
-  password: '1234',  // Your pgAdmin password
-  port: 5432,                 // Standard PostgreSQL port
-});
+// Check if we are on Vercel (using connection string), otherwise fallback to local credentials
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false // Required by cloud providers like Aiven/Render to allow secure connections
+      }
+    })
+  : new Pool({
+      user: 'postgres',
+      host: 'localhost',
+      database: 'zovro_db',
+      password: '1234',
+      port: 5432,
+    });
 
 pool.on('connect', () => {
-  console.log('Connected to PostgreSQL (zovro_db)');
+    console.log('Connected to PostgreSQL database successfully');
 });
-
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
-});
-
-module.exports = pool;
