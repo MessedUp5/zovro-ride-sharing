@@ -17,7 +17,7 @@ const pool = process.env.DATABASE_URL
     });
 
 pool.on('connect', () => {
-    console.log('Connected to PostgreSQL database successfully');
+    console.log('Connected to PostgreSQL db successfully');
 });
 
 module.exports = pool;
