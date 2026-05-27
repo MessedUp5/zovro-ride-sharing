@@ -1,3 +1,4 @@
+import API_BASE_URL from "../config/api";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
@@ -10,7 +11,7 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
-const socket = io("https://zovro-backend.vercel.app/");
+const socket = io(API_BASE_URL);
 
 function LiveMap() {
   const [driverPosition, setDriverPosition] = useState([6.9271, 79.8612]);

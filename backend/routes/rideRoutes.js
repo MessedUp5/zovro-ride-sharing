@@ -95,19 +95,25 @@ router.put("/status/:id", authMiddleware, async (req, res) => {
   const { status, lat, lng } = req.body;
   
   // Use string identifier to match character varying(255) column fields
-  const driverIdentifier = req.user?.uid || String(req.user?.id || "");
+  // 🟢 NEW: Check body payload first, then fallback safely to middleware contexts
+  const driverIdentifier = req.body.driver_uid || req.user?.uid || String(req.user?.id || "");
+
+  if (!driverIdentifier || driverIdentifier === "") {
+    console.error("Driver identification mapping breakdown inside status route.");
+    return res.status(400).json({ error: "Driver profile validation context missing." });
+  }
 
   try {
     // FIX: Targets 'ride_id' and populates 'driver_current_lat' / 'driver_current_lng'
     const queryText = `
-      UPDATE rides 
-      SET status = $1, 
-          driver_uid = $2, 
-          driver_current_lat = $3::double precision, 
-          driver_current_lng = $4::double precision
-      WHERE ride_id = $5::integer
-      RETURNING *;
-    `;
+    UPDATE rides 
+    SET status = $1, 
+        driver_uid = $2, 
+        driver_current_lat = $3::double precision, 
+        driver_current_lng = $4::double precision
+    WHERE ride_id = $5::integer
+    RETURNING *;
+  `;
 
     const queryValues = [
       status,
@@ -211,7 +217,7 @@ router.get('/active-ride', authMiddleware, async (req, res) => {
       return res.status(401).json({ error: "User identity profile reference invalid." });
     }
 
-    // FIX: Leveraged 'u.id' with clear type casting to align with string-based driver fields smoothly
+    // ADDED 'completed' to the status array check below
     const activeRide = await pool.query(
       `SELECT r.*, 
               CONCAT(u.first_name, ' ', u.last_name) as driver_name, 
@@ -219,7 +225,7 @@ router.get('/active-ride', authMiddleware, async (req, res) => {
        FROM rides r 
        LEFT JOIN users u ON r.driver_uid::varchar = u.id::varchar 
        WHERE r.rider_uid = $1::varchar
-         AND r.status IN ('pending', 'accepted', 'arrived', 'ongoing')
+         AND r.status IN ('pending', 'accepted', 'arrived', 'ongoing', 'completed')
        ORDER BY r.created_at DESC 
        LIMIT 1`,
       [passengerId]
@@ -241,25 +247,23 @@ router.get('/active-ride', authMiddleware, async (req, res) => {
 // Inside your accept ride backend route handler
 router.patch("/accept", authMiddleware, async (req, res) => {
   const { ride_id } = req.body;
-  const driverId = req.user.id; // Using the clean numerical ID from your new token payload
+  const driverId = req.user.id; 
 
   try {
-    // FIX: Ensure you are updating using correct schema columns
-    // We update driver_uid with the integer string or id, and set status to 'accepted'
+    // FIXED: Changed 'WHERE id' to 'WHERE ride_id'
     const updatedRide = await pool.query(
       `UPDATE rides 
        SET status = 'accepted', 
            driver_uid = $1 
-       WHERE id = $2 
+       WHERE ride_id = $2::integer 
        RETURNING *`,
-      [String(driverId), ride_id]
+      [String(driverId), parseInt(ride_id, 10)]
     );
 
     res.json({ success: true, ride: updatedRide.rows[0] });
   } catch (err) {
     console.error("====== ACTIVE RIDE DB CRASH ======");
     console.error(err.message);
-    console.error("==================================");
     res.status(500).json({ error: "Failed to process ride acceptance rules." });
   }
 });

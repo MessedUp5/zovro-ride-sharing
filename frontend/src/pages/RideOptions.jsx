@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import API_BASE_URL from "../config/api";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
@@ -8,7 +9,7 @@ import L from 'leaflet';
 // Map Recenter Sub-component
 function MapRecenter({ center }) {
   const map = useMap();
-  React.useEffect(() => {
+  useEffect(() => {
     if (center && center[0] && center[1]) {
       map.panTo(center, { animate: true, duration: 1.5 });
     }
@@ -25,7 +26,7 @@ function RideOptions(props) {
   const pickupLng = props.pickupCoords?.lng || location.state?.pickupLng;
   const dropLat = props.dropCoords?.lat || location.state?.dropLat;
   const dropLng = props.dropCoords?.lng || location.state?.dropLng;
-
+  const navigate = useNavigate();
   const [roadDistance, setRoadDistance] = useState(0);
   const [selectedRide, setSelectedRide] = useState("Moto");
   const [isSearching, setIsSearching] = useState(false);
@@ -33,6 +34,12 @@ function RideOptions(props) {
   const [activeRide, setActiveRide] = useState(null);
   const [trackingRoute, setTrackingRoute] = useState([]);
   const [etaMinutes, setEtaMinutes] = useState(null);
+  const [showRatingScreen, setShowRatingScreen] = useState(false);
+  const [driverToRate, setDriverToRate] = useState({ id: null, name: "" });
+  const [rating, setRating] = useState(5); 
+
+  // Track completion state cleanly to protect loops
+  const isCompletedRef = useRef(false);
 
   // Haversine fallback formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -74,7 +81,7 @@ function RideOptions(props) {
     fetchDistance();
   }, [pickupLat, pickupLng, dropLat, dropLng]);
 
-  // Dummy nearby vehicles generation
+  // Nearby vehicles generation
   useEffect(() => {
     if (pickupLat && pickupLng) {
       const drivers = Array.from({ length: 5 }).map((_, i) => ({
@@ -88,6 +95,7 @@ function RideOptions(props) {
 
   // Handle Request Fire
   const handleRideRequest = async () => {
+    isCompletedRef.current = false; 
     setIsSearching(true);
     const currentRide = rides.find(r => r.id === selectedRide);
 
@@ -103,7 +111,7 @@ function RideOptions(props) {
 
     try {
       const token = localStorage.getItem("token"); 
-      const response = await fetch("https://zovro-backend.vercel.app/api/rides/request", {
+      const response = await fetch(`${API_BASE_URL}/api/rides/request`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,14 +134,14 @@ function RideOptions(props) {
     }
   };
 
-  // Clean / Cancel current ride posting records
+  // Cancel current ride posting records
   const handleCancelRide = async () => {
     setIsSearching(false); 
     setActiveRide(null); 
     console.log("Cancelling ride...");
 
     try {
-        const response = await fetch("https://zovro-backend.vercel.app/api/rides/cancel", {
+        const response = await fetch(`${API_BASE_URL}/api/rides/cancel`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -149,7 +157,7 @@ function RideOptions(props) {
 
   // Real-time tracking route & ETA path calculator
   useEffect(() => {
-    if (!activeRide || !activeRide.driver_current_lat || !activeRide.driver_current_lng) return;
+    if (!activeRide || !activeRide.driver_current_lat || !activeRide.driver_current_lng || activeRide.status === "completed") return;
   
     const getTrackingRouteAndETA = async () => {
       const dLat = parseFloat(activeRide.driver_current_lat);
@@ -195,42 +203,128 @@ function RideOptions(props) {
   useEffect(() => {
     let intervalId;
 
-    if (isSearching || (activeRide && activeRide.status !== "completed")) {
-      const fetchRideAndDriverStatus = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const response = await fetch("https://zovro-backend.vercel.app/api/rides/active-ride", {
-            headers: { "Authorization": `Bearer ${token}` }
-          });
+    // 🟢 GUARD 1: Exit immediately if rating screen is active or ref indicates complete
+    if (showRatingScreen || isCompletedRef.current) {
+      return;
+    }
+
+    const fetchRideAndDriverStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE_URL}/api/rides/active-ride`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
           
-          if (response.ok) {
-            const data = await response.json();
-            
-            if (data.ride) {
+          if (data.ride) {
+            // 🟢 INTERCEPT COMPLETION SECURELY
+            if (data.ride.status === "completed" && !isCompletedRef.current) {
+              console.log("🎯 Ride completion captured successfully!", data.ride);
+              isCompletedRef.current = true; 
+              clearInterval(intervalId);     
+        
+              setDriverToRate({
+                id: data.ride.driver_uid, 
+                name: data.ride.driver_name || "Your Driver"
+              });
+              
+              setShowRatingScreen(true);
+              setActiveRide(data.ride); 
+              setIsSearching(false);
+            } else if (!isCompletedRef.current) {
               setActiveRide(data.ride); 
               if (data.ride.status !== "pending") {
                 setIsSearching(false); 
               }
-            } else if (activeRide && !data.ride) {
-              setActiveRide(null);
-              setIsSearching(false);
+            }
+          } else {
+            // 🟢 SAFEGUARD FALLBACK
+            // If backend returns data.ride = null but our front-end is currently tracking an ongoing ride,
+            // do NOT instantly clear it unless we are 100% sure it wasn't just completed.
+            if (activeRide && !isCompletedRef.current) {
+              // If the current frontend state says it's ongoing, treat an abrupt null as a backend completion mismatch
+              if (activeRide.status === "ongoing") {
+                console.log("⚠️ Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
+                isCompletedRef.current = true;
+                clearInterval(intervalId);
+                
+                setDriverToRate({
+                  id: activeRide.driver_uid,
+                  name: activeRide.driver_name || "Your Driver"
+                });
+                setShowRatingScreen(true);
+              } else {
+                // Safe to clear out completely unhandled or cancelled states
+                setActiveRide(null);
+                setIsSearching(false);
+              }
             }
           }
-        } catch (error) {
-          console.error("Error syncing driver live location:", error);
         }
-      };
+      } catch (error) {
+        console.error("Error syncing driver live location:", error);
+      }
+    };
 
+    // Only set up interval if we are searching or have an in-progress ride
+    if (isSearching || (activeRide && activeRide.status !== "completed")) {
       fetchRideAndDriverStatus();
       intervalId = setInterval(fetchRideAndDriverStatus, 3000);
     }
 
-    return () => clearInterval(intervalId);
-  }, [isSearching, activeRide?.status]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isSearching, activeRide?.status, showRatingScreen]);
 
-  // =========================================================================
-  // HOOK COMPLIANT GUARD RAIL (All hooks safely sit above this check)
-  // =========================================================================
+  const handleRatingSubmit = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/api/driver/rate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          driver_id: driverToRate.id,
+          rating: rating
+        }),
+      });
+  
+      if (response.ok) {
+        console.log("Rating saved successfully");
+      } else {
+        console.error("Failed to save rating down to data layers");
+      }
+    } catch (error) {
+      console.error("Network error submitting driver evaluation:", error);
+    } finally {
+      // 1. Wipe out booking parameters saved in local storage to break any rendering loops
+      localStorage.removeItem("pendingRideIntent");
+  
+      // 2. Clear all tracking references completely
+      isCompletedRef.current = false;
+      setShowRatingScreen(false);
+      setActiveRide(null); 
+      setDriverToRate({ id: null, name: "" });
+      setRating(5);
+  
+      // 3. Clear location/input states if they are accessible within this component context
+      if (typeof setPickup === "function") setPickup("");
+      if (typeof setDrop === "function") setDrop("");
+  
+      // 4. Force route path straight back to clean home view
+      // Using replace: true alters window history so clicking "Back" won't bug the UI
+      navigate("/", { replace: true });
+  
+      // 5. Hard reset guarantee: Completely purges residual state trees in memory
+      window.location.reload();
+    }
+  };
+
   if (!pickupLat || !dropLat) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
@@ -240,7 +334,6 @@ function RideOptions(props) {
     );
   }
 
-  // Moved Rates and Options higher up to satisfy leaf icon checks below
   const rates = { Moto: 50, Tuk: 100, Car: 200 };
   
   const rides = [
@@ -249,7 +342,6 @@ function RideOptions(props) {
     { id: "Zip", name: "Zip", price: (roadDistance * rates.Car).toFixed(2), seats: 4, img: "https://d1a3f4spazzrp4.cloudfront.net/car-types/halo/v1_1/halo_uberx.png" },
   ];
 
-  // Leaflet custom Icon configurations
   const pulseIcon = L.divIcon({
     className: 'pulse-icon-container',
     html: `
@@ -267,9 +359,52 @@ function RideOptions(props) {
   });
 
   // =========================================================================
-  // INTERCEPTOR LAYER: Active Realtime Tracking Screen
+  // INTERCEPTOR LAYER 1: Post-Trip Driver Rating Screen (HIGHEST PRIORITY)
   // =========================================================================
-  if (activeRide && activeRide.status !== "pending") {
+  if (showRatingScreen) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#f3f4f6" }}>
+        <Navbar />
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", padding: "20px" }}>
+          <div style={{ background: "#ffffff", padding: "40px", borderRadius: "16px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", maxWidth: "420px", width: "100%", textAlign: "center" }}>
+            
+            <div style={{ width: "80px", height: "80px", background: "#f0fdf4", borderRadius: "50%", display: "flex", justifyContent: "center", alignItems: "center", margin: "0 auto 20px" }}>
+              <i className="fa-solid fa-square-check" style={{ fontSize: "40px", color: "#16a34a" }}></i>
+            </div>
+
+            <h2 style={{ fontSize: "24px", fontWeight: "800", color: "#111", margin: "0 0 8px 0" }}>Trip Completed!</h2>
+            <p style={{ color: "#666", margin: "0 0 24px 0", fontSize: "15px" }}>
+              How was your ride with <strong>{driverToRate.name}</strong>?
+            </p>
+
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginBottom: "32px" }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <i
+                  key={star}
+                  className={star <= rating ? "fa-solid fa-star" : "fa-regular fa-star"}
+                  style={{ fontSize: "32px", color: "#eab308", cursor: "pointer", transition: "transform 0.1s ease" }}
+                  onClick={() => setRating(star)}
+                />
+              ))}
+            </div>
+
+            <button
+              style={{ width: "100%", padding: "16px", borderRadius: "8px", background: "#111111", color: "#ffffff", border: "none", fontWeight: "700", fontSize: "16px", cursor: "pointer" }}
+              onClick={handleRatingSubmit}
+            >
+              Submit Feedback
+            </button>
+            
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // INTERCEPTOR LAYER 2: Active Realtime Tracking Screen (EXCLUDING 'completed')
+  // =========================================================================
+  if (activeRide && activeRide.status !== "pending" && activeRide.status !== "completed") {
     return (
       <div className="rider-tracking-wrapper" style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
         <Navbar />
@@ -291,7 +426,7 @@ function RideOptions(props) {
 
                 {etaMinutes !== null && activeRide.status !== "arrived" && (
                   <span style={{ background: "#f0fdf4", color: "#16a34a", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700" }}>
-                     ETA: {etaMinutes} mins
+                       ETA: {etaMinutes} mins
                   </span>
                 )}
               </div>
@@ -369,7 +504,7 @@ function RideOptions(props) {
   }
 
   // =========================================================================
-  // STANDARD SELECTION & SEARCHING MARKUP
+  // STANDARD SELECTION & SEARCHING MARKUP (FALLBACK BASELINE)
   // =========================================================================
   return (
     <div className={`rider-home-wrapper ${isSearching ? "mode-searching" : "mode-selection"}`}>

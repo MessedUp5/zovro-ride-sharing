@@ -1,3 +1,4 @@
+import API_BASE_URL from "../config/api";
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -19,7 +20,7 @@ const firebaseConfig = {
 // Add 'role' to the parameters
 const syncWithPostgres = async (firebaseUser, fName, lName, role) => { 
   try {
-    const response = await fetch("https://zovro-backend.vercel.app/api/auth/register", {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

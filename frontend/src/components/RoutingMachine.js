@@ -15,16 +15,31 @@ function RoutingMachine({ userPos, targetPos }) {
         L.latLng(targetPos.lat, targetPos.lng)
       ],
       lineOptions: {
-        styles: [{ color: "#007bff", weight: 6 }] // Uber-style blue line
+        styles: [{ color: "#007bff", weight: 6 }] 
       },
       addWaypoints: false,
       draggableWaypoints: false,
-      fitSelectedRoutes: true,
-      show: false, // Hide the text instructions box
+      
+      // 🟢 CHANGE THIS TO FALSE
+      fitSelectedRoutes: false, 
+      
+      show: false, 
     }).addTo(map);
 
-    return () => map.removeControl(routingControl);
-  }, [map, userPos, targetPos]); // Re-draws line when driver moves
+    return () => {
+      if (map && routingControl) {
+        map.removeControl(routingControl);
+      }
+    };
+  }, [map, userPos, targetPos]); 
+
+  // 🟢 OPTIONAL ADDITION: Manually center the map smoothly ONCE on initial load 
+  // without locking the camera frame during progression updates
+  useEffect(() => {
+    if (map && userPos) {
+      map.panTo([userPos.lat, userPos.lng]);
+    }
+  }, [map]); // Notice this ONLY runs once when the map mounts!
 
   return null;
 }

@@ -1,3 +1,4 @@
+import API_BASE_URL from "../config/api";
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
@@ -188,7 +189,7 @@ useEffect(() => {
         setSelectedLatLng({ lat, lng });
   
         fetch(
-          `https://zovro-backend.vercel.app/api/location/reverse?lat=${lat}&lon=${lng}`
+          `${API_BASE_URL}/api/location/reverse?lat=${lat}&lon=${lng}`
         )
           .then((res) => res.json())
           .then((data) => {
@@ -213,7 +214,7 @@ useEffect(() => {
   const fetchLocation = async (lat, lng) => {
     try {
       const res = await fetch(
-        `https://zovro-backend.vercel.app/api/location/reverse?lat=${lat}&lon=${lng}`
+        `${API_BASE_URL}/api/location/reverse?lat=${lat}&lon=${lng}`
       );
 
       const data = await res.json();
@@ -237,7 +238,7 @@ setCurrentLocation(fullLocation);
   
     try {
       const res = await fetch(
-        `https://zovro-backend.vercel.app/api/location/search?q=${encodeURIComponent(text)}`
+        `${API_BASE_URL}/api/location/search?q=${encodeURIComponent(text)}`
       );
   
       const data = await res.json();
@@ -262,7 +263,7 @@ setCurrentLocation(fullLocation);
       const userId = localStorage.getItem("userId"); // Add this
 
       const response = await axios.post(
-        "https://zovro-backend.vercel.app/api/rides/request",
+        `${API_BASE_URL}/api/rides/request`,
         {
           user_id: userId, // Pass the ID from storage
           pickup_location: pickup,

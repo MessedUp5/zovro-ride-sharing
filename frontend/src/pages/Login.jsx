@@ -1,3 +1,4 @@
+import API_BASE_URL from "../config/api";
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
@@ -73,7 +74,7 @@ function Login() {
         const firebaseUser = result.user;
   
         try {
-          const response = await fetch(`https://zovro-backend.vercel.app/api/auth/login-firebase`, {
+          const response = await fetch(`${API_BASE_URL}/api/auth/login-firebase`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ firebase_uid: firebaseUser.uid }),

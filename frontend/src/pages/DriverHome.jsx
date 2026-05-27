@@ -1,4 +1,6 @@
+import API_BASE_URL from "../config/api";
 import React, { useState, useEffect } from 'react';
+
 import Navbar from "../components/Navbar";
 import RoutingMachine from "../components/RoutingMachine";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -12,6 +14,7 @@ function DriverHome() {
   const [currentUser, setCurrentUser] = useState(null);
   const [driverCoords, setDriverCoords] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
+  const [isProcessingAccept, setIsProcessingAccept] = useState(false);
 
   // Load User Data
   useEffect(() => {
@@ -37,7 +40,7 @@ useEffect(() => {
 
         // FIX: Route general updates to the profile tracker, leaving trip-location alone
         try {
-          await fetch('https://zovro-backend.vercel.app/api/rides/update-driver-profile-location', {
+          await fetch(`${API_BASE_URL}/api/rides/update-driver-profile-location`, {
             method: 'PATCH',
             headers: { 
               'Content-Type': 'application/json',
@@ -69,7 +72,7 @@ useEffect(() => {
         const { latitude, longitude } = position.coords;
         
         try {
-          await fetch("https://zovro-backend.vercel.app/api/rides/update-trip-location", {
+          await fetch(`${API_BASE_URL}/api/rides/update-trip-location`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -96,10 +99,10 @@ useEffect(() => {
   // Poll for nearby incoming matching rides
   useEffect(() => {
     const pollForRides = async () => {
-      if (!isOnline || !driverCoords || activeRide) return; 
+      if (!isOnline || !driverCoords || activeRide || isProcessingAccept) return; 
     
       try {
-        const url = `https://zovro-backend.vercel.app/api/rides/pending?lat=${driverCoords.lat}&lng=${driverCoords.lng}`;
+        const url = `${API_BASE_URL}/api/rides/pending?lat=${driverCoords.lat}&lng=${driverCoords.lng}`;
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem("token")}`
@@ -108,7 +111,12 @@ useEffect(() => {
     
         if (response.ok) {
           const data = await response.json();
-          setIncomingRide(data.length > 0 ? data[0] : null);
+          // Double check guards inside async resolution
+          if (data.length > 0 && !activeRide && !isProcessingAccept) {
+            setIncomingRide(data[0]);
+          } else {
+            setIncomingRide(null);
+          }
         }
       } catch (error) {
         console.error("Polling error:", error);
@@ -117,11 +125,10 @@ useEffect(() => {
   
     const interval = setInterval(pollForRides, 3000);
     return () => clearInterval(interval);
-  }, [isOnline, driverCoords, activeRide]);
+  }, [isOnline, driverCoords, activeRide, isProcessingAccept]);
 
 // Handle Accepting Ride Request
 const handleAccept = async () => {
-  // FIX: Support both standard id naming variants flexibly
   const realRideId = incomingRide?.ride_id || incomingRide?.id;
   
   if (!incomingRide || !realRideId || !currentUser) {
@@ -129,93 +136,101 @@ const handleAccept = async () => {
     return;
   }
   
+  setIsProcessingAccept(true);
+  setIncomingRide(null); 
+  
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      console.error("Driver authentication token missing.");
+      setIsProcessingAccept(false);
       return;
     }
-  
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { latitude, longitude } = position.coords;
-  
-      // Targets the dynamic ride ID value extracted safely above
-      const response = await fetch(`https://zovro-backend.vercel.app/api/rides/status/${realRideId}`, {
-        method: "PUT",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify({ 
-          status: "accepted",
-          lat: latitude,  
-          lng: longitude  
-        }),
-      });
+
+    // 🟢 OPTIMIZATION: Fallback safely to existing coordinates in memory 
+    // instead of making the browser re-query the physical hardware chip.
+    const latitude = driverCoords?.lat || 6.9271; // default fallback if null
+    const longitude = driverCoords?.lng || 79.8612;
+
+    // Immediately execute network call without waiting on hardware callbacks
+    const response = await fetch(`${API_BASE_URL}/api/rides/status/${realRideId}`, {
+      method: "PUT",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` 
+      },
+      body: JSON.stringify({ 
+        status: "accepted",
+        lat: latitude,  
+        lng: longitude,
+        driver_uid: currentUser?.uid || currentUser?.id || currentUser?.firebase_uid
+      }),
+    });
+    
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log("Ride setup resolved successfully:", data);
+      const verifiedRideData = data.ride || data;
       
-      const data = await response.json();
-  
-      if (response.ok) {
-        console.log("Ride setup resolved successfully:", data);
-        
-        const verifiedRideData = data.ride || data;
-        
-        // Build a robust active ride state object
-        const stableRideObject = {
-          ...incomingRide,
-          ...verifiedRideData,
-          id: realRideId,
-          ride_id: realRideId,
-          status: "accepted"
-        };
-        
-        setActiveRide(stableRideObject); 
-        setIncomingRide(null); // Dismiss the request popup cleanly
-      } else {
-        console.error("Server rejected assignment:", data.error);
-        alert(`Server error processing accept request: ${data.error || "Unknown Error"}`);
-      }
-    }, (geoErr) => {
-      console.error("Geolocation verification breakdown:", geoErr);
-      alert("Please ensure device location services are turned on to accept incoming requests.");
-    }, { enableHighAccuracy: true });
+      const stableRideObject = {
+        ...incomingRide,
+        ...verifiedRideData,
+        id: realRideId,
+        ride_id: realRideId,
+        status: "accepted"
+      };
+      
+      setActiveRide(stableRideObject); 
+    } else {
+      console.error("Server rejected assignment:", data.error);
+      alert(`Server error processing accept request: ${data.error || "Unknown Error"}`);
+    }
   
   } catch (err) {
     console.error("Network processing failure:", err);
+  } finally {
+    setIsProcessingAccept(false);
   }
 };
 
-  // Update live progression status steps ('arrived', 'ongoing', 'completed')
-  const updateRideProgression = async (nextStatus) => {
-    if (!activeRide || !activeRide.id) return;
+// Update live progression status steps ('arrived', 'ongoing', 'completed')
+const updateRideProgression = async (nextStatus) => {
+  if (!activeRide || !activeRide.id) return;
 
-    try {
-      // FIX 6: Target path modified to track against activeRide.id
-      const response = await fetch(`https://zovro-backend.vercel.app/api/rides/status/${activeRide.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify({ status: nextStatus })
-      });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/rides/status/${activeRide.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      },
+      body: JSON.stringify({ status: nextStatus })
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok) {
-        if (nextStatus === "completed") {
-          alert("Trip completed successfully!");
-          setActiveRide(null); 
-        } else {
-          setActiveRide(data.ride); 
-        }
+    if (response.ok) {
+      if (nextStatus === "completed") {
+        // 🟢 FIX: Avoid using blocking window.alert strings which freeze component lifecycles
+        console.log("Trip marked as completed in DB.");
+        setActiveRide(null); 
+        setIncomingRide(null);
       } else {
-        alert("Failed to update status step: " + data.error);
+        // Map the backend structure carefully to retain .id keys
+        const synchronizedRide = data.ride || data;
+        setActiveRide({
+          ...activeRide,
+          ...synchronizedRide,
+          id: activeRide.id
+        }); 
       }
-    } catch (err) {
-      console.error("Failed progression step change:", err);
+    } else {
+      console.error("Failed to update status step:", data.error);
     }
-  };
+  } catch (err) {
+    console.error("Failed progression step change:", err);
+  }
+};
 
   const toggleStatus = () => {
     setIsOnline(!isOnline);
@@ -265,10 +280,11 @@ const handleAccept = async () => {
               </div>
 
               <div className="map-view">
+                {/* 🟢 UNIQUE KEY ADDS FORCE RE-RENDER ASSURANCE */}
                 <MapContainer 
                   center={driverCoords ? [driverCoords.lat, driverCoords.lng] : [6.9271, 79.8612]} 
                   zoom={14} 
-                  key={driverCoords ? `map-${driverCoords.lat}` : 'default'}
+                  key={driverCoords ? `idle-map-${driverCoords.lat}-${driverCoords.lng}` : 'default-idle'}
                 >
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   {driverCoords && (
@@ -280,59 +296,72 @@ const handleAccept = async () => {
               </div>
             </div>
           </>
-        ) : (
-          <div className="active-ride-layout">
-            <div className="ride-details-sidebar">
-              <h2>
-                {activeRide.status === "accepted" && "Heading to Pickup"}
-                {activeRide.status === "arrived" && "Driver has Arrived"}
-                {activeRide.status === "ongoing" && "Trip in Progress"}
-              </h2>
-              <div className="detail-card">
-                <p><strong>Passenger Pickup:</strong></p>
-                <p>{activeRide.pickup_address}</p>
-                <hr />
-                <p><strong>Destination:</strong></p>
-                <p>{activeRide.drop_address}</p>
-              </div>
-              
-              {buttonConfig && (
-                <button 
-                  className={`arrived-btn ${activeRide.status}`} 
-                  onClick={() => updateRideProgression(buttonConfig.next)}
-                >
-                  {buttonConfig.text}
-                </button>
-              )}
-            </div>
+) : (
+  <div className="active-ride-layout">
+    <div className="ride-details-sidebar">
+      <h2>
+        {activeRide.status === "accepted" && "Heading to Pickup"}
+        {activeRide.status === "arrived" && "Driver has Arrived"}
+        {activeRide.status === "ongoing" && "Trip in Progress"}
+      </h2>
+      <div className="detail-card">
+        <p><strong>Passenger Pickup:</strong></p>
+        <p>{activeRide.pickup_address}</p>
+        <hr />
+        <p><strong>Destination:</strong></p>
+        <p>{activeRide.drop_address}</p>
+      </div>
+      
+      {buttonConfig && (
+        <button 
+          className={`arrived-btn ${activeRide.status}`} 
+          onClick={() => updateRideProgression(buttonConfig.next)}
+        >
+          {buttonConfig.text}
+        </button>
+      )}
+    </div>
 
-            <div className="navigation-map">
-              <MapContainer 
-                center={driverCoords ? [driverCoords.lat, driverCoords.lng] : [6.9271, 79.8612]} 
-                zoom={16}
-              >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                
-                {driverCoords && (
-                  <RoutingMachine 
-                    userPos={driverCoords} 
-                    targetPos={
-                      activeRide.status === "ongoing" 
-                        ? { lat: activeRide.drop_lat, lng: activeRide.drop_lng }
-                        : { lat: activeRide.pickup_lat, lng: activeRide.pickup_lng }
-                    } 
-                  />
-                )}
+    <div className="navigation-map">
+      {/* 🟢 FIXED: Only render the map once coordinates are completely validated as clear numbers */}
+      {driverCoords && 
+       !isNaN(parseFloat(activeRide.pickup_lat)) && 
+       !isNaN(parseFloat(activeRide.pickup_lng)) ? (
+        
+        <MapContainer 
+          center={[driverCoords.lat, driverCoords.lng]} 
+          zoom={16}
+          key={`active-map-${activeRide.id}-${activeRide.status}`}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          
+          <RoutingMachine 
+            userPos={driverCoords} 
+            targetPos={
+              activeRide.status === "ongoing" 
+                ? { lat: parseFloat(activeRide.drop_lat), lng: parseFloat(activeRide.drop_lng) }
+                : { lat: parseFloat(activeRide.pickup_lat), lng: parseFloat(activeRide.pickup_lng) }
+            } 
+          />
 
-                {driverCoords && <Marker position={[driverCoords.lat, driverCoords.lng]} />}
-                <Marker position={[activeRide.pickup_lat, activeRide.pickup_lng]} />
-              </MapContainer>
-            </div>
-          </div>
-        )}
+          <Marker position={[driverCoords.lat, driverCoords.lng]} />
+          <Marker position={[parseFloat(activeRide.pickup_lat), parseFloat(activeRide.pickup_lng)]} />
+        </MapContainer>
+        
+      ) : (
+        // Safe placeholder so the UI layout doesn't crash or freeze while map details load
+        <div className="map-loading-placeholder">
+          <p>Initializing live routing engine maps...</p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
       </div>
 
-      {incomingRide && (
+      {/* 🟢 DOUBLE GUARD CHECK AGAINST ACTIVE RIDE PRESENCE */}
+      {incomingRide && !activeRide && (
         <div className="ride-request-modal">
           <div className="modal-content">
             <h2>Incoming Ride Request!</h2>
