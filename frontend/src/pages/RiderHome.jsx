@@ -20,6 +20,21 @@ function ChangeMapView({ coords }) {
   return null;
 }
 
+function MapInvalidateSize() {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Small timeout ensures the browser has completely finished painting the CSS layout
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  return null;
+}
+
 function RiderHome() {
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
@@ -502,6 +517,7 @@ setCurrentLocation(fullLocation);
               style={{ height: "100%", width: "100%" }}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapInvalidateSize />
               <MapClickHandler setSelectedLatLng={setSelectedLatLng} setSelectedAddress={setSelectedAddress} />
               {selectedLatLng && <Marker position={[selectedLatLng.lat, selectedLatLng.lng]} />}
               </MapContainer>

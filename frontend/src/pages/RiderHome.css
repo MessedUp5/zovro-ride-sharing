@@ -301,3 +301,73 @@ body {
   font-size: 16px;
   cursor: pointer;
 }
+
+
+/* ==========================================
+   MOBILE & RESPONSIVE LAYOUT FIXES
+   ========================================== */
+
+   @media (max-width: 768px) {
+    /* Prevent horizontal scrolling on mobile viewports */
+    .rider-home-wrapper {
+      overflow-x: hidden;
+      width: 100vw;
+    }
+  
+    /* Shrink hero typography to fit mobile viewports */
+    .hero-section {
+      padding: 100px 20px 40px;
+    }
+  
+    .hero-content h1 {
+      font-size: 36px;
+      letter-spacing: -0.5px;
+    }
+  
+    .hero-content p {
+      font-size: 15px;
+    }
+  
+    /* Wrap desktop side-by-side components into a single column layout */
+    .rider-layout {
+      flex-direction: column;
+      padding: 20px 15px;
+      gap: 20px;
+    }
+  
+    /* Expand panels to occupy the full width of the mobile viewport */
+    .rider-layout .left-panel,
+    .left-panel {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+    }
+  
+    /* Make the map modal card fill the screen when active */
+    .right-panel {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      z-index: 10000 !important; /* Forces layout layers above the header navigation */
+    }
+  
+    /* Explicitly size Leaflet layers inside full-screen containers */
+    .leaflet-container {
+      width: 100% !important;
+      height: 100% !important;
+      position: absolute !important;
+      top: 0;
+      left: 0;
+    }
+  
+    /* Adjust placement of clear text input buttons */
+    .clear-btn {
+      top: 50%;
+      right: 12px;
+    }
+  }
