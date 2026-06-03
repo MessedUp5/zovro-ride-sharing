@@ -199,85 +199,88 @@ function RideOptions(props) {
     };
   }, [isSearching]);
 
-  // Live Location Sync Polling Effect Loop
-  useEffect(() => {
-    let intervalId;
+// Live Location Sync Polling Effect Loop - FIXED
+useEffect(() => {
+  let intervalId;
 
-    // 🟢 GUARD 1: Exit immediately if rating screen is active or ref indicates complete
-    if (showRatingScreen || isCompletedRef.current) {
-      return;
-    }
+  // 🟢 GUARD 1: Exit immediately if rating screen is active or ref indicates complete
+  if (showRatingScreen || isCompletedRef.current) {
+    return;
+  }
 
-    const fetchRideAndDriverStatus = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${API_BASE_URL}/api/rides/active-ride`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
+  const fetchRideAndDriverStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/api/rides/active-ride`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
         
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.ride) {
-            // 🟢 INTERCEPT COMPLETION SECURELY
-            if (data.ride.status === "completed" && !isCompletedRef.current) {
-              console.log("🎯 Ride completion captured successfully!", data.ride);
-              isCompletedRef.current = true; 
-              clearInterval(intervalId);     
-        
-              setDriverToRate({
-                id: data.ride.driver_uid, 
-                name: data.ride.driver_name || "Your Driver"
-              });
-              
-              setShowRatingScreen(true);
-              setActiveRide(data.ride); 
-              setIsSearching(false);
-            } else if (!isCompletedRef.current) {
-              setActiveRide(data.ride); 
-              if (data.ride.status !== "pending") {
-                setIsSearching(false); 
-              }
+        if (data.ride) {
+          // 🟢 INTERCEPT COMPLETION SECURELY
+          if (data.ride.status === "completed" && !isCompletedRef.current) {
+            console.log("🎯 Ride completion captured successfully!", data.ride);
+            isCompletedRef.current = true; 
+            clearInterval(intervalId);     
+      
+            setDriverToRate({
+              id: data.ride.driver_uid, 
+              name: data.ride.driver_name || "Your Driver"
+            });
+            
+            setShowRatingScreen(true);
+            setActiveRide(data.ride); 
+            setIsSearching(false);
+          } else if (!isCompletedRef.current) {
+            setActiveRide(data.ride); 
+            if (data.ride.status !== "pending") {
+              setIsSearching(false); 
             }
-          } else {
-            // 🟢 SAFEGUARD FALLBACK
-            // If backend returns data.ride = null but our front-end is currently tracking an ongoing ride,
-            // do NOT instantly clear it unless we are 100% sure it wasn't just completed.
-            if (activeRide && !isCompletedRef.current) {
-              // If the current frontend state says it's ongoing, treat an abrupt null as a backend completion mismatch
-              if (activeRide.status === "ongoing") {
-                console.log("⚠️ Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
-                isCompletedRef.current = true;
-                clearInterval(intervalId);
-                
-                setDriverToRate({
-                  id: activeRide.driver_uid,
-                  name: activeRide.driver_name || "Your Driver"
-                });
-                setShowRatingScreen(true);
-              } else {
-                // Safe to clear out completely unhandled or cancelled states
-                setActiveRide(null);
-                setIsSearching(false);
-              }
+          }
+        } else {
+          // 🟢 SAFEGUARD FALLBACK CRITICAL FIX
+          // If backend returns null, but we are actively waiting for a match (isSearching is true),
+          // DO NOT clear out the states or kill the pulsar effect.
+          if (isSearching) {
+            console.log("⏳ Backend returned no ride yet, keeping pulsar animation spinning...");
+            return; 
+          }
+
+          if (activeRide && !isCompletedRef.current) {
+            if (activeRide.status === "ongoing") {
+              console.log("⚠️ Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
+              isCompletedRef.current = true;
+              clearInterval(intervalId);
+              
+              setDriverToRate({
+                id: activeRide.driver_uid,
+                name: activeRide.driver_name || "Your Driver"
+              });
+              setShowRatingScreen(true);
+            } else {
+              setActiveRide(null);
+              setIsSearching(false);
             }
           }
         }
-      } catch (error) {
-        console.error("Error syncing driver live location:", error);
       }
-    };
-
-    // Only set up interval if we are searching or have an in-progress ride
-    if (isSearching || (activeRide && activeRide.status !== "completed")) {
-      fetchRideAndDriverStatus();
-      intervalId = setInterval(fetchRideAndDriverStatus, 3000);
+    } catch (error) {
+      console.error("Error syncing driver live location:", error);
     }
+  };
 
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [isSearching, activeRide?.status, showRatingScreen]);
+  // Only set up interval if we are searching or have an in-progress ride
+  if (isSearching || (activeRide && activeRide.status !== "completed")) {
+    fetchRideAndDriverStatus();
+    intervalId = setInterval(fetchRideAndDriverStatus, 3000);
+  }
+
+  return () => {
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [isSearching, activeRide?.status, showRatingScreen]);
 
   const handleRatingSubmit = async () => {
     try {
