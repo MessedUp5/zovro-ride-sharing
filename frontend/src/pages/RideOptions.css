@@ -1,38 +1,41 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Manrope', serif;
-}
-
-body {
-  font-family: 'Manrope', serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.rider-home-wrapper {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column; 
-  padding-top: 60px; 
-  overflow: hidden; 
-  background-color: #f3f3f3;
-  box-sizing: border-box;
-}
-
-.rides-container {
-  display: grid;
-  grid-template-columns: 350px 1fr 450px;
-  height: calc(100vh - 60px); 
-  background: #fff;
+/* =========================================================================
+   BASE & STRUCTURAL LAYOUTS (DESKTOP DEFAULT)
+   ========================================================================= */
+   * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Manrope', serif;
   }
   
+  body {
+    font-family: 'Manrope', serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .rider-home-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column; 
+    padding-top: 60px; 
+    overflow: hidden; 
+    background-color: #f3f3f3;
+    box-sizing: border-box;
+  }
+  
+  .rides-container {
+    display: grid;
+    grid-template-columns: 350px 1fr 450px;
+    height: calc(100vh - 60px); 
+    background: #fff;
+  }
+    
   .rides-left {
     padding: 16px;
     background-color: #f8f8f8;
   }
-  
+    
   .get-a-ride-card {
     background: white;
     padding: 20px;
@@ -40,13 +43,13 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     font-family: 'Inter', sans-serif;
   }
-  
+    
   .get-a-ride-card h2 {
     font-size: 24px;
     margin: 0 0 16px 0;
     font-weight: 700;
   }
-  
+    
   /* Promo Badge */
   .promo-row {
     background-color: #d1f5d3;
@@ -57,7 +60,7 @@ body {
     gap: 10px;
     margin-bottom: 12px;
   }
-  
+    
   .promo-text {
     font-size: 13px;
     color: #000;
@@ -65,7 +68,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  
+    
   /* Location Selection with Vertical Line */
   .location-container {
     position: relative;
@@ -74,25 +77,25 @@ body {
     gap: 8px;
     margin-bottom: 12px;
   }
-  
+    
   .route-line {
     position: absolute;
-  left: 9px; 
-  top: 20px;
-  bottom: 20px;
-  width: 2px;
-  background-color: #eee; 
-  z-index: 1;
+    left: 9px; 
+    top: 20px;
+    bottom: 20px;
+    width: 2px;
+    background-color: #eee; 
+    z-index: 1;
   }
-  
+    
   .location-row {
     display: flex;
-  align-items: center;
-  gap: 15px;
-  position: relative;
-  margin-bottom: 5px;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    margin-bottom: 5px;
   }
-  
+    
   .location-box {
     background-color: #eee;
     padding: 14px;
@@ -103,18 +106,18 @@ body {
     justify-content: space-between;
     align-items: center;
   }
-
+  
   .blue-icon {
-    color: #276ef1; /* Professional Uber-style Blue */
+    color: #276ef1; 
     font-size: 18px;
     width: 20px;
     display: flex;
     justify-content: center;
     z-index: 2;
-    background: white; /* Prevents the route line from showing through the icon */
+    background: white; 
     padding: 2px 0;
   }
-  
+    
   .add-stop {
     font-weight: bold;
     font-size: 20px;
@@ -127,7 +130,7 @@ body {
     justify-content: center;
     border-radius: 50%;
   }
-  
+    
   /* Pickup Now and User Selector */
   .option-item, .user-selector {
     background-color: #eee;
@@ -140,26 +143,26 @@ body {
     font-size: 15px;
     width: fit-content;
   }
-  
+    
   .option-item { width: 100%; justify-content: space-between; }
-  
+    
   .user-selector {
     border-radius: 20px;
     padding: 8px 16px;
   }
-  
+    
   .chevron {
     font-size: 18px;
     margin-left: auto;
   }
-
+  
   .trip-summary-card {
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     padding: 20px;
   }
-  
+    
   /* Center Panel */
   .rides-center { 
     padding: 20px 40px; 
@@ -168,10 +171,10 @@ body {
     display: flex;
     flex-direction: column;
   }
-  
+    
   .rides-center h1 { font-size: 32px; margin-bottom: 8px; }
   .sub-heading { color: #666; font-weight: 600; margin-bottom: 20px; }
-  
+    
   /* Ride Cards */
   .ride-option-card {
     display: flex;
@@ -183,15 +186,15 @@ body {
     cursor: pointer;
     transition: 0.2s;
   }
-  
+    
   .ride-option-card:hover { background: #f6f6f6; }
   .ride-option-card.selected { border-color: #000; }
-  
+    
   .vehicle-img { width: 80px; margin-right: 20px; }
   .ride-info { flex: 1; }
   .ride-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
   .ride-desc { color: #666; font-size: 14px; margin-top: 4px; }
-  
+    
   /* Faster Badge */
   .faster-badge {
     background: #276ef1;
@@ -200,7 +203,7 @@ body {
     padding: 2px 8px;
     border-radius: 20px;
   }
-  
+    
   /* Bottom Bar */
   .request-bar {
     margin-top: auto;
@@ -211,7 +214,7 @@ body {
     border-top: 1px solid #eee;
     background: white;
   }
-  
+    
   .request-confirm-btn {
     background: black;
     color: white;
@@ -222,186 +225,351 @@ body {
     font-weight: bold;
     cursor: pointer;
   }
-  
-  /* Map */
+    
+  /* Map CONTAINER */
   .rides-right { position: relative; border-radius: 12px; margin: 10px; overflow: hidden; }
-
+  
   /* Searching Panel Layout */
-.searching-panel {
-  flex: 0 0 450px; /* Takes up the space of left and center combined */
-  padding: 40px;
-  background: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.searching-content h2 {
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
-/* Loading Dots Animation */
-.loading-dots {
-  display: flex;
-  gap: 5px;
-  margin: 20px 0;
-}
-
-.loading-dots span {
-  width: 10px;
-  height: 10px;
-  background-color: #276ef1;
-  border-radius: 50%;
-  animation: dot-pulse 1.4s infinite ease-in-out;
-}
-
-.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
-.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes dot-pulse {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
-}
-
-@keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
-}
-
-/* Request Summary Card */
-.request-details-card {
-  border: 1px solid #eee;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-
-.selected-vehicle-summary {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
-}
-
-.selected-vehicle-summary img {
-  width: 50px;
-}
-
-/* Cancel Button */
-.cancel-request-btn {
-  width: 100%;
-  padding: 15px;
-  background-color: #000000;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.cancel-request-btn:hover {
-  background-color: #3d3d3d;
-}
-
-.mode-searching .rides-container {
-  display: flex;
-  width: 100%; /* Ensure it spans the full width of the screen */
-  height: calc(100vh - 70px);
-}
-
-.mode-searching .searching-panel {
-  flex: 0 0 400px; /* This stays exactly 400px wide */
-  background: white;
-  padding: 40px;
-  border-right: 1px solid #eee;
-  z-index: 10;
-}
-
-/* Ensure the map fills the rest of the space ONLY during search */
-.mode-searching .rides-right {
-  flex: 1; /* This tells the map: "Take up ALL remaining space on the right" */
-  width: 100%; 
-  height: 100%;
-  position: relative;
-}
-
-.mode-searching .leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.pulse-icon-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* The solid center point */
-.main-dot {
-  width: 14px;
-  height: 14px;
-  background: #276ef1;
-  border-radius: 50%;
-  position: absolute;
-  z-index: 5;
-  box-shadow: 0 0 10px rgba(39, 110, 241, 0.8);
-}
-
-.pulse-ring {
-  border: 2px solid #276ef1;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  position: absolute;
-  opacity: 0;
-  /* 3 second duration makes it travel further without looking too fast */
-  animation: pulse-wave 3s cubic-bezier(0.21, 0.53, 0.56, 0.8) infinite;
-}
-
-.ring-2 { animation-delay: 1s; }
-.ring-3 { animation-delay: 2s; }
-
-@keyframes pulse-wave {
-  0% {
-    transform: scale(0.1);
+  .searching-panel {
+    flex: 0 0 450px; 
+    padding: 40px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .searching-content h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  /* Loading Dots Animation */
+  .loading-dots {
+    display: flex;
+    gap: 5px;
+    margin: 20px 0;
+  }
+  
+  .loading-dots span {
+    width: 10px;
+    height: 10px;
+    background-color: #276ef1;
+    border-radius: 50%;
+    animation: dot-pulse 1.4s infinite ease-in-out;
+  }
+  
+  .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+  .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+  
+  @keyframes dot-pulse {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+  
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+  
+  /* Request Summary Card */
+  .request-details-card {
+    border: 1px solid #eee;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .selected-vehicle-summary {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+  }
+  
+  .selected-vehicle-summary img {
+    width: 50px;
+  }
+  
+  /* Cancel Button */
+  .cancel-request-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .cancel-request-btn:hover {
+    background-color: #3d3d3d;
+  }
+  
+  .mode-searching .rides-container {
+    display: flex;
+    width: 100%; 
+    height: calc(100vh - 70px);
+  }
+  
+  .mode-searching .searching-panel {
+    flex: 0 0 400px; 
+    background: white;
+    padding: 40px;
+    border-right: 1px solid #eee;
+    z-index: 10;
+  }
+  
+  /* Ensure the map fills the rest of the space ONLY during search */
+  .mode-searching .rides-right {
+    flex: 1; 
+    width: 100%; 
+    height: 100%;
+    position: relative;
+  }
+  
+  .mode-searching .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  .pulse-icon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* The solid center point */
+  .main-dot {
+    width: 14px;
+    height: 14px;
+    background: #276ef1;
+    border-radius: 50%;
+    position: absolute;
+    z-index: 5;
+    box-shadow: 0 0 10px rgba(39, 110, 241, 0.8);
+  }
+  
+  .pulse-ring {
+    border: 2px solid #276ef1;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    position: absolute;
     opacity: 0;
+    animation: pulse-wave 3s cubic-bezier(0.21, 0.53, 0.56, 0.8) infinite;
   }
-  10% {
-    opacity: 0.7; /* Becomes visible quickly */
+  
+  .ring-2 { animation-delay: 1s; }
+  .ring-3 { animation-delay: 2s; }
+  
+  @keyframes pulse-wave {
+    0% {
+      transform: scale(0.1);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.7; 
+    }
+    100% {
+      transform: scale(8.0); 
+      opacity: 0; 
+    }
   }
-  100% {
-    /* Increase this number (e.g., 10.0 or 12.0) to make it travel even further */
-    transform: scale(8.0); 
-    opacity: 0; /* Fades out at the end of the distance */
+  
+  @keyframes pulsate-long {
+    0% {
+      transform: scale(0.1);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(4.0); 
+      opacity: 0;
+    }
   }
-}
-
-@keyframes pulsate-long {
-  0% {
-    transform: scale(0.1);
-    opacity: 0;
+  
+  @keyframes pulsate {
+    0% { transform: scale(0.1); opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { transform: scale(1.5); opacity: 0; }
   }
-  10% {
-    opacity: 0.8;
+  
+  .rider-home-wrapper.mode-searching {
+    width: 100vw;
+    overflow-x: hidden;
   }
-  /* The ring now grows to 4x its size (scale 4.0) */
-  100% {
-    transform: scale(4.0); 
-    opacity: 0;
+  
+  /* =========================================================================
+     MEDIA QUERY: TARGETS MOBILE ECOSYSTEM RUNTIMES (< 768PX VIEWPORTS)
+     ========================================================================= */
+  @media (max-width: 768px) {
+    .rider-home-wrapper {
+      padding-top: 60px; /* Maintains clean headroom below standard Navbar layouts */
+      height: 100vh;
+      overflow: hidden;
+    }
+  
+    /* Structural override: Switches side-by-side structures into an absolute overlay context */
+    .rides-container,
+    .mode-searching .rides-container {
+      display: flex !important;
+      flex-direction: column-reverse !important; 
+      position: relative !important;
+      width: 100vw !important;
+      height: calc(100vh - 60px) !important;
+      overflow: hidden !important;
+    }
+  
+    /* 1. Force map space canvas to expand directly under text layers */
+    .rides-right,
+    .mode-searching .rides-right {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      z-index: 1 !important;
+    }
+  
+    /* 2. Anchor selection content interface as a sliding card at the bottom */
+    .rides-center {
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-height: 50vh !important; 
+      background: #ffffff !important;
+      border-radius: 24px 24px 0 0 !important; 
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15) !important;
+      padding: 20px 16px 85px 16px !important; /* Extra bottom padding prevents text truncation under sticky bar */
+      z-index: 10 !important;
+      overflow-y: auto !important;
+    }
+  
+    /* 3. Hide static components to conserve viewports */
+    .rides-left,
+    .get-a-ride-card {
+      display: none !important;
+    }
+  
+    /* Scaling Typography down for compact displays */
+    .rides-center h1 {
+      font-size: 22px !important;
+      margin-bottom: 2px !important;
+      font-weight: 800;
+    }
+  
+    .sub-heading {
+      font-size: 13px !important;
+      margin-bottom: 15px !important;
+    }
+  
+    /* Optimize layout of ride rows */
+    .ride-option-card {
+      padding: 10px 12px !important;
+      margin-bottom: 8px !important;
+      border-radius: 12px !important;
+      background: #fdfdfd;
+      border: 1px solid #eee;
+    }
+    
+    .ride-option-card.selected {
+      border: 2px solid #000 !important;
+      background: #f8f8f8;
+    }
+  
+    .vehicle-img {
+      width: 55px !important;
+      margin-right: 12px !important;
+    }
+  
+    .ride-header {
+      font-size: 15px !important;
+    }
+  
+    .ride-desc {
+      font-size: 12px !important;
+      margin-top: 2px !important;
+    }
+  
+    /* 4. Fix confirming action bars perfectly along screen bottom boundaries */
+    .request-bar {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      padding: 12px 16px !important;
+      background: #ffffff !important;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.08) !important;
+      border-top: 1px solid #eee !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      z-index: 15 !important;
+    }
+  
+    .request-confirm-btn {
+      padding: 12px 24px !important;
+      font-size: 15px !important;
+      border-radius: 8px !important;
+      flex: 1;
+      margin-left: 15px;
+      text-align: center;
+    }
+  
+    /* 5. Handle standard matching overlay overrides during active queries */
+    .searching-panel,
+    .mode-searching .searching-panel {
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-height: 45vh !important;
+      height: auto !important;
+      background: #ffffff !important;
+      border-radius: 24px 24px 0 0 !important;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15) !important;
+      padding: 24px 16px !important;
+      z-index: 20 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      border-right: none !important;
+    }
+  
+    .searching-content h2 {
+      font-size: 18px !important;
+      margin-bottom: 10px !important;
+      font-weight: 800;
+    }
+  
+    .request-details-card {
+      padding: 12px !important;
+      margin-bottom: 12px !important;
+      background: #fafafa;
+    }
+  
+    .selected-vehicle-summary {
+      margin-top: 10px !important;
+      padding-top: 10px !important;
+    }
+  
+    .cancel-request-btn {
+      padding: 12px !important;
+      font-size: 15px !important;
+    }
   }
-}
-
-@keyframes pulsate {
-  0% { transform: scale(0.1); opacity: 0; }
-  50% { opacity: 0.8; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
-.rider-home-wrapper.mode-searching {
-  width: 100vw;
-  overflow-x: hidden;
-}

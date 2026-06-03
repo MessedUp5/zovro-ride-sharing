@@ -26,45 +26,42 @@ function DriverHome() {
   }, []);
 
   // Watch Location when driver goes online
-  // Watch Location when driver goes online
-useEffect(() => {
-  let watchId;
+  useEffect(() => {
+    let watchId;
 
-  if (isOnline) {
-    watchId = navigator.geolocation.watchPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setDriverCoords({ lat: latitude, lng: longitude });
-        
-        console.log("Moving to:", latitude, longitude);
+    if (isOnline) {
+      watchId = navigator.geolocation.watchPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setDriverCoords({ lat: latitude, lng: longitude });
+          
+          console.log("Moving to:", latitude, longitude);
 
-        // FIX: Route general updates to the profile tracker, leaving trip-location alone
-        try {
-          await fetch(`${API_BASE_URL}/api/rides/update-driver-profile-location`, {
-            method: 'PATCH',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem("token")}`
-            },
-            body: JSON.stringify({ lat: latitude, lng: longitude })
-          });
-        } catch (err) {
-          console.error("Failed to stream global profile location:", err);
-        }
-      },
-      (err) => console.error("Position Error:", err),
-      { enableHighAccuracy: true, distanceFilter: 10 }
-    );
-  }
+          try {
+            await fetch(`${API_BASE_URL}/api/rides/update-driver-profile-location`, {
+              method: 'PATCH',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem("token")}`
+              },
+              body: JSON.stringify({ lat: latitude, lng: longitude })
+            });
+          } catch (err) {
+            console.error("Failed to stream global profile location:", err);
+          }
+        },
+        (err) => console.error("Position Error:", err),
+        { enableHighAccuracy: true, distanceFilter: 10 }
+      );
+    }
 
-  return () => {
-    if (watchId) navigator.geolocation.clearWatch(watchId);
-  };
-}, [isOnline]);
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [isOnline]);
 
   // Stream Location From the Driver's App while explicitly on an active ride
   useEffect(() => {
-    // FIX 2: Changed activeRide.ride_id to activeRide.id to match the DB schema layout
     if (!activeRide || !activeRide.id) return;
 
     const watchId = navigator.geolocation.watchPosition(
@@ -79,7 +76,7 @@ useEffect(() => {
               "Authorization": `Bearer ${localStorage.getItem("token")}`
             },
             body: JSON.stringify({
-              ride_id: activeRide.id, // FIX 3: Sending DB-compliant id mapped to ride_id param
+              ride_id: activeRide.id, 
               lat: latitude,
               lng: longitude
             })
@@ -111,7 +108,6 @@ useEffect(() => {
     
         if (response.ok) {
           const data = await response.json();
-          // Double check guards inside async resolution
           if (data.length > 0 && !activeRide && !isProcessingAccept) {
             setIncomingRide(data[0]);
           } else {
@@ -127,110 +123,105 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [isOnline, driverCoords, activeRide, isProcessingAccept]);
 
-// Handle Accepting Ride Request
-const handleAccept = async () => {
-  const realRideId = incomingRide?.ride_id || incomingRide?.id;
-  
-  if (!incomingRide || !realRideId || !currentUser) {
-    console.error("Cannot accept ride: Missing ride data or user profile context.");
-    return;
-  }
-  
-  setIsProcessingAccept(true);
-  setIncomingRide(null); 
-  
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setIsProcessingAccept(false);
+  // Handle Accepting Ride Request
+  const handleAccept = async () => {
+    const realRideId = incomingRide?.ride_id || incomingRide?.id;
+    
+    if (!incomingRide || !realRideId || !currentUser) {
+      console.error("Cannot accept ride: Missing ride data or user profile context.");
       return;
     }
-
-    // 🟢 OPTIMIZATION: Fallback safely to existing coordinates in memory 
-    // instead of making the browser re-query the physical hardware chip.
-    const latitude = driverCoords?.lat || 6.9271; // default fallback if null
-    const longitude = driverCoords?.lng || 79.8612;
-
-    // Immediately execute network call without waiting on hardware callbacks
-    const response = await fetch(`${API_BASE_URL}/api/rides/status/${realRideId}`, {
-      method: "PUT",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` 
-      },
-      body: JSON.stringify({ 
-        status: "accepted",
-        lat: latitude,  
-        lng: longitude,
-        driver_uid: currentUser?.uid || currentUser?.id || currentUser?.firebase_uid
-      }),
-    });
     
-    const data = await response.json();
-
-    if (response.ok) {
-      console.log("Ride setup resolved successfully:", data);
-      const verifiedRideData = data.ride || data;
-      
-      const stableRideObject = {
-        ...incomingRide,
-        ...verifiedRideData,
-        id: realRideId,
-        ride_id: realRideId,
-        status: "accepted"
-      };
-      
-      setActiveRide(stableRideObject); 
-    } else {
-      console.error("Server rejected assignment:", data.error);
-      alert(`Server error processing accept request: ${data.error || "Unknown Error"}`);
-    }
-  
-  } catch (err) {
-    console.error("Network processing failure:", err);
-  } finally {
-    setIsProcessingAccept(false);
-  }
-};
-
-// Update live progression status steps ('arrived', 'ongoing', 'completed')
-const updateRideProgression = async (nextStatus) => {
-  if (!activeRide || !activeRide.id) return;
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/rides/status/${activeRide.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      },
-      body: JSON.stringify({ status: nextStatus })
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      if (nextStatus === "completed") {
-        // 🟢 FIX: Avoid using blocking window.alert strings which freeze component lifecycles
-        console.log("Trip marked as completed in DB.");
-        setActiveRide(null); 
-        setIncomingRide(null);
-      } else {
-        // Map the backend structure carefully to retain .id keys
-        const synchronizedRide = data.ride || data;
-        setActiveRide({
-          ...activeRide,
-          ...synchronizedRide,
-          id: activeRide.id
-        }); 
+    setIsProcessingAccept(true);
+    setIncomingRide(null); 
+    
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsProcessingAccept(false);
+        return;
       }
-    } else {
-      console.error("Failed to update status step:", data.error);
+
+      const latitude = driverCoords?.lat || 6.9271; 
+      const longitude = driverCoords?.lng || 79.8612;
+
+      const response = await fetch(`${API_BASE_URL}/api/rides/status/${realRideId}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          status: "accepted",
+          lat: latitude,  
+          lng: longitude,
+          driver_uid: currentUser?.uid || currentUser?.id || currentUser?.firebase_uid
+        }),
+      });
+      
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Ride setup resolved successfully:", data);
+        const verifiedRideData = data.ride || data;
+        
+        const stableRideObject = {
+          ...incomingRide,
+          ...verifiedRideData,
+          id: realRideId,
+          ride_id: realRideId,
+          status: "accepted"
+        };
+        
+        setActiveRide(stableRideObject); 
+      } else {
+        console.error("Server rejected assignment:", data.error);
+        alert(`Server error processing accept request: ${data.error || "Unknown Error"}`);
+      }
+    
+    } catch (err) {
+      console.error("Network processing failure:", err);
+    } finally {
+      setIsProcessingAccept(false);
     }
-  } catch (err) {
-    console.error("Failed progression step change:", err);
-  }
-};
+  };
+
+  // Update live progression status steps ('arrived', 'ongoing', 'completed')
+  const updateRideProgression = async (nextStatus) => {
+    if (!activeRide || !activeRide.id) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/rides/status/${activeRide.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ status: nextStatus })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (nextStatus === "completed") {
+          console.log("Trip marked as completed in DB.");
+          setActiveRide(null); 
+          setIncomingRide(null);
+        } else {
+          const synchronizedRide = data.ride || data;
+          setActiveRide({
+            ...activeRide,
+            ...synchronizedRide,
+            id: activeRide.id
+          }); 
+        }
+      } else {
+        console.error("Failed to update status step:", data.error);
+      }
+    } catch (err) {
+      console.error("Failed progression step change:", err);
+    }
+  };
 
   const toggleStatus = () => {
     setIsOnline(!isOnline);
@@ -258,116 +249,113 @@ const updateRideProgression = async (nextStatus) => {
       <Navbar />
       <div className="content-wrapper">
         {!activeRide ? (
-          <>
+          <div className="driver-layout">
+            {/* Moved inside driver-layout to let the map go full background fluidly */}
             <div className={`status-bar ${isOnline ? "online" : "offline"}`}>
               <span className="status-text">
-                {isOnline ? "● You are Online" : "○ You are Offline"}
+                {isOnline ? "● Online" : "○ Offline"}
               </span>
               <button className="toggle-btn" onClick={toggleStatus}>
                 {isOnline ? "Go Offline" : "Go Online"}
               </button>
             </div>
 
-            <div className="driver-layout">
-              <div className="stats-panel">
-                <h2 className="stats-title">Today's Earnings</h2>
-                <h1 className="earnings-amount">LKR 4,500.00</h1>
-                <hr className="divider" />
-                <div className="stats-info">
-                  <p>Rides Completed: <strong>8</strong></p>
-                  <p>Rating: <span className="star">⭐</span> <strong>4.9</strong></p>
-                </div>
-              </div>
-
-              <div className="map-view">
-                {/* 🟢 UNIQUE KEY ADDS FORCE RE-RENDER ASSURANCE */}
-                <MapContainer 
-                  center={driverCoords ? [driverCoords.lat, driverCoords.lng] : [6.9271, 79.8612]} 
-                  zoom={14} 
-                  key={driverCoords ? `idle-map-${driverCoords.lat}-${driverCoords.lng}` : 'default-idle'}
-                >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  {driverCoords && (
-                    <Marker position={[driverCoords.lat, driverCoords.lng]}>
-                      <Popup>You are currently here.</Popup>
-                    </Marker>
-                  )}
-                </MapContainer>
+            <div className="stats-panel">
+              <h2 className="stats-title">Today's Earnings</h2>
+              <h1 className="earnings-amount">LKR 4,500.00</h1>
+              <hr className="divider" />
+              <div className="stats-info">
+                <p>Rides Completed: <strong>8</strong></p>
+                <p>Rating: <span className="star">⭐</span> <strong>4.9</strong></p>
               </div>
             </div>
-          </>
-) : (
-  <div className="active-ride-layout">
-    <div className="ride-details-sidebar">
-      <h2>
-        {activeRide.status === "accepted" && "Heading to Pickup"}
-        {activeRide.status === "arrived" && "Driver has Arrived"}
-        {activeRide.status === "ongoing" && "Trip in Progress"}
-      </h2>
-      <div className="detail-card">
-        <p><strong>Passenger Pickup:</strong></p>
-        <p>{activeRide.pickup_address}</p>
-        <hr />
-        <p><strong>Destination:</strong></p>
-        <p>{activeRide.drop_address}</p>
+
+            <div className="map-view">
+              <MapContainer 
+                center={driverCoords ? [driverCoords.lat, driverCoords.lng] : [6.9271, 79.8612]} 
+                zoom={14} 
+                key={driverCoords ? `idle-map-${driverCoords.lat}-${driverCoords.lng}` : 'default-idle'}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                {driverCoords && (
+                  <Marker position={[driverCoords.lat, driverCoords.lng]}>
+                    <Popup>You are currently here.</Popup>
+                  </Marker>
+                )}
+              </MapContainer>
+            </div>
+          </div>
+        ) : (
+          <div className="active-ride-layout">
+            <div className="ride-details-sidebar">
+              <h2>
+                {activeRide.status === "accepted" && "Heading to Pickup"}
+                {activeRide.status === "arrived" && "Driver has Arrived"}
+                {activeRide.status === "ongoing" && "Trip in Progress"}
+              </h2>
+              <div className="detail-card">
+                <p><strong>Passenger Pickup:</strong></p>
+                <p>{activeRide.pickup_address}</p>
+                <hr />
+                <p><strong>Destination:</strong></p>
+                <p>{activeRide.drop_address}</p>
+              </div>
+              
+              {buttonConfig && (
+                <button 
+                  className={`arrived-btn ${activeRide.status}`} 
+                  onClick={() => updateRideProgression(buttonConfig.next)}
+                >
+                  {buttonConfig.text}
+                </button>
+              )}
+            </div>
+
+            <div className="navigation-map">
+              {driverCoords && 
+               !isNaN(parseFloat(activeRide.pickup_lat)) && 
+               !isNaN(parseFloat(activeRide.pickup_lng)) ? (
+                
+                <MapContainer 
+                  center={[driverCoords.lat, driverCoords.lng]} 
+                  zoom={16}
+                  key={`active-map-${activeRide.id}-${activeRide.status}`}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  
+                  <RoutingMachine 
+                    userPos={driverCoords} 
+                    targetPos={
+                      activeRide.status === "ongoing" 
+                        ? { lat: parseFloat(activeRide.drop_lat), lng: parseFloat(activeRide.drop_lng) }
+                        : { lat: parseFloat(activeRide.pickup_lat), lng: parseFloat(activeRide.pickup_lng) }
+                    } 
+                  />
+
+                  <Marker position={[driverCoords.lat, driverCoords.lng]} />
+                  <Marker position={[parseFloat(activeRide.pickup_lat), parseFloat(activeRide.pickup_lng)]} />
+                </MapContainer>
+                
+              ) : (
+                <div className="map-loading-placeholder">
+                  <p>Initializing live routing engine maps...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-      
-      {buttonConfig && (
-        <button 
-          className={`arrived-btn ${activeRide.status}`} 
-          onClick={() => updateRideProgression(buttonConfig.next)}
-        >
-          {buttonConfig.text}
-        </button>
-      )}
-    </div>
 
-    <div className="navigation-map">
-      {/* 🟢 FIXED: Only render the map once coordinates are completely validated as clear numbers */}
-      {driverCoords && 
-       !isNaN(parseFloat(activeRide.pickup_lat)) && 
-       !isNaN(parseFloat(activeRide.pickup_lng)) ? (
-        
-        <MapContainer 
-          center={[driverCoords.lat, driverCoords.lng]} 
-          zoom={16}
-          key={`active-map-${activeRide.id}-${activeRide.status}`}
-          style={{ height: "100%", width: "100%" }}
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          
-          <RoutingMachine 
-            userPos={driverCoords} 
-            targetPos={
-              activeRide.status === "ongoing" 
-                ? { lat: parseFloat(activeRide.drop_lat), lng: parseFloat(activeRide.drop_lng) }
-                : { lat: parseFloat(activeRide.pickup_lat), lng: parseFloat(activeRide.pickup_lng) }
-            } 
-          />
-
-          <Marker position={[driverCoords.lat, driverCoords.lng]} />
-          <Marker position={[parseFloat(activeRide.pickup_lat), parseFloat(activeRide.pickup_lng)]} />
-        </MapContainer>
-        
-      ) : (
-        // Safe placeholder so the UI layout doesn't crash or freeze while map details load
-        <div className="map-loading-placeholder">
-          <p>Initializing live routing engine maps...</p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
-      </div>
-
-      {/* 🟢 DOUBLE GUARD CHECK AGAINST ACTIVE RIDE PRESENCE */}
       {incomingRide && !activeRide && (
         <div className="ride-request-modal">
           <div className="modal-content">
             <h2>Incoming Ride Request!</h2>
-            <p><strong>Pickup:</strong> {incomingRide.pickup_address}</p>
-            <p><strong>Drop:</strong> {incomingRide.drop_address}</p>
-            <p><strong>Fare:</strong> LKR {incomingRide.fare_lkr}</p>
+            <div className="modal-body-details">
+              <p><strong>Pickup:</strong> {incomingRide.pickup_address}</p>
+              <p><strong>Drop:</strong> {incomingRide.drop_address}</p>
+              <p className="modal-fare"><strong>Fare:</strong> LKR {incomingRide.fare_lkr}</p>
+            </div>
             <div className="modal-actions">
               <button className="accept-btn" onClick={handleAccept}>Accept Ride</button>
               <button className="decline-btn" onClick={() => setIncomingRide(null)}>Decline</button>
