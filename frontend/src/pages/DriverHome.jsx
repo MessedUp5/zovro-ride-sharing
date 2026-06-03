@@ -3,10 +3,35 @@ import React, { useState, useEffect } from 'react';
 
 import Navbar from "../components/Navbar";
 import RoutingMachine from "../components/RoutingMachine";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "./DriverHome.css";
 import L from "leaflet";
 import "leaflet-routing-machine"; 
+
+// 🟢 HELPER SUB-COMPONENT: Fixes mobile aspect shifts, handles smooth tracking & prevents blank layouts
+function DriverMapRecalibrator({ coordinates, status }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (!map) return;
+
+    // Recalculate dimensions for mobile aspect views
+    const timer = setTimeout(() => {
+      map.invalidateSize({ animate: true });
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [map, status]);
+
+  useEffect(() => {
+    // Smoothly follow the driver's pin without remounting the layout
+    if (map && coordinates) {
+      map.setView([coordinates.lat, coordinates.lng], map.getZoom());
+    }
+  }, [map, coordinates]);
+
+  return null;
+}
 
 function DriverHome() {
   const [isOnline, setIsOnline] = useState(false);
@@ -250,7 +275,6 @@ function DriverHome() {
       <div className="content-wrapper">
         {!activeRide ? (
           <div className="driver-layout">
-            {/* Moved inside driver-layout to let the map go full background fluidly */}
             <div className={`status-bar ${isOnline ? "online" : "offline"}`}>
               <span className="status-text">
                 {isOnline ? "● Online" : "○ Offline"}
@@ -271,12 +295,16 @@ function DriverHome() {
             </div>
 
             <div className="map-view">
+              {/* 🟢 FIXED: Removed the dynamic driverCoords key that caused remount destruction loop */}
               <MapContainer 
                 center={driverCoords ? [driverCoords.lat, driverCoords.lng] : [6.9271, 79.8612]} 
                 zoom={14} 
-                key={driverCoords ? `idle-map-${driverCoords.lat}-${driverCoords.lng}` : 'default-idle'}
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                
+                {/* Automatically repositions and prevents mobile sizing flaws without flashes */}
+                <DriverMapRecalibrator coordinates={driverCoords} status={isOnline} />
+
                 {driverCoords && (
                   <Marker position={[driverCoords.lat, driverCoords.lng]}>
                     <Popup>You are currently here.</Popup>
@@ -319,11 +347,13 @@ function DriverHome() {
                 <MapContainer 
                   center={[driverCoords.lat, driverCoords.lng]} 
                   zoom={16}
-                  key={`active-map-${activeRide.id}-${activeRide.status}`}
+                  key={`active-map-${activeRide.id}`} // FIXED: Removed activeRide.status from key to prevent map resetting between step toggles
                   style={{ height: "100%", width: "100%" }}
                 >
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   
+                  <DriverMapRecalibrator coordinates={driverCoords} status={activeRide.status} />
+
                   <RoutingMachine 
                     userPos={driverCoords} 
                     targetPos={
