@@ -42,6 +42,12 @@ function RideOptions(props) {
   const currentRequestedRideIdRef = useRef(null);
   const isCompletedRef = useRef(false);
 
+  // 🟢 PERSISTENT REF LOCKS TO PREVENT UNMOUNT CLEANUP RACES
+  const isSearchingRef = useRef(false);
+  useEffect(() => {
+    isSearchingRef.current = isSearching;
+  }, [isSearching]);
+
   // Haversine fallback formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return 0;
@@ -139,11 +145,11 @@ function RideOptions(props) {
     }
   };
 
-  // Cancel current ride posting records
+  // 🟢 FIXED MANUAL CANCELLATION HANDLER
   const handleCancelRide = async () => {
+    console.log("Explicit manual cancellation triggered by user...");
     setIsSearching(false); 
     setActiveRide(null); 
-    console.log("Cancelling ride...");
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/rides/cancel`, {
@@ -154,9 +160,9 @@ function RideOptions(props) {
             },
         });
         const data = await response.json();
-        console.log("Cleanup result:", data);
+        console.log("Manual cancel operation complete:", data);
     } catch (error) {
-        console.error("Cleanup error:", error);
+        console.error("Manual cancel server update error:", error);
     }
   };
 
@@ -197,106 +203,107 @@ function RideOptions(props) {
     getTrackingRouteAndETA();
   }, [activeRide?.driver_current_lat, activeRide?.driver_current_lng, activeRide?.status]);
 
-  // Clean up side effect when switching screens
+  // 🟢 FIXED SAFE UNMOUNT SYNC CLEANUP (Runs ONLY when completely leaving the DOM layout)
   useEffect(() => {
     return () => {
-      if (isSearching) handleCancelRide();
+      if (isSearchingRef.current) {
+        console.log("Component unmounting mid-search. Auto-purging database record...");
+        fetch(`${API_BASE_URL}/api/rides/cancel`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json"
+          },
+        }).catch(err => console.error("Automated teardown error:", err));
+      }
     };
-  }, [isSearching]);
+  }, []); // Bound strictly to true unmount lifecycle
 
-// Live Location Sync Polling Effect Loop - FIXED STATE DROPOUT
-useEffect(() => {
-  let intervalId;
+  // Live Location Sync Polling Effect Loop
+  useEffect(() => {
+    let intervalId;
 
-  // 🟢 GUARD 1: Exit immediately if rating screen is active or ref indicates complete
-  if (showRatingScreen || isCompletedRef.current) {
-    return;
-  }
+    if (showRatingScreen || isCompletedRef.current) {
+      return;
+    }
 
-  const fetchRideAndDriverStatus = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/api/rides/active-ride`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
+    const fetchRideAndDriverStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE_URL}/api/rides/active-ride`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
         
-        // CASE 1: Backend found an active or pending ride match
-        if (data && data.ride) {
-          const backendRideId = data.ride.id || data.ride.ride_id;
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data && data.ride) {
+            const backendRideId = data.ride.id || data.ride.ride_id;
 
-          if (isSearching && currentRequestedRideIdRef.current && backendRideId !== currentRequestedRideIdRef.current) {
-            console.log("Skipping stale historical database entry. Waiting for driver allocation...");
-            return;
-          }
+            if (isSearching && currentRequestedRideIdRef.current && backendRideId !== currentRequestedRideIdRef.current) {
+              console.log("Skipping stale historical database entry. Waiting for driver allocation...");
+              return;
+            }
 
-          // Capture Trip Completion Explicitly
-          if (data.ride.status === "completed" && !isCompletedRef.current && !isSearching) {
-            console.log("Ride completion captured successfully!");
-            isCompletedRef.current = true; 
-            if (intervalId) clearInterval(intervalId);   
-      
-            setDriverToRate({
-              id: data.ride.driver_uid, 
-              name: data.ride.driver_name || "Your Driver"
-            });
-            
-            setShowRatingScreen(true);
-            setActiveRide(data.ride); 
-            setIsSearching(false);
-            return;
-          }
-
-          // Normal Tracking Update
-          setActiveRide(data.ride); 
-          if (data.ride.status !== "pending") {
-            setIsSearching(false); // Turn off pulsar only when driver accepts
-          }
-        } 
-        // CASE 2: Backend returned no active ride data (null or empty)
-        else {
-          // 🟢 HARD LOCK: If we are actively searching, do NOT drop out to selection screen!
-          if (isSearching) {
-            console.log("Backend returned no ride yet, maintaining pulsar animation state...");
-            return; 
-          }
-
-          // Handle mid-trip dropouts safely
-          if (activeRide && !isCompletedRef.current) {
-            if (activeRide.status === "ongoing") {
-              console.log("Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
-              isCompletedRef.current = true;
-              if (intervalId) clearInterval(intervalId);
-              
+            if (data.ride.status === "completed" && !isCompletedRef.current && !isSearching) {
+              console.log("Ride completion captured successfully!");
+              isCompletedRef.current = true; 
+              if (intervalId) clearInterval(intervalId);   
+        
               setDriverToRate({
-                id: activeRide.driver_uid,
-                name: activeRide.driver_name || "Your Driver"
+                id: data.ride.driver_uid, 
+                name: data.ride.driver_name || "Your Driver"
               });
+              
               setShowRatingScreen(true);
-            } else {
-              setActiveRide(null);
+              setActiveRide(data.ride); 
               setIsSearching(false);
+              return;
+            }
+
+            setActiveRide(data.ride); 
+            if (data.ride.status !== "pending") {
+              setIsSearching(false); 
+            }
+          } 
+          else {
+            if (isSearching) {
+              console.log("Backend returned no ride yet, maintaining pulsar animation state...");
+              return; 
+            }
+
+            if (activeRide && !isCompletedRef.current) {
+              if (activeRide.status === "ongoing") {
+                console.log("Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
+                isCompletedRef.current = true;
+                if (intervalId) clearInterval(intervalId);
+                
+                setDriverToRate({
+                  id: activeRide.driver_uid,
+                  name: activeRide.driver_name || "Your Driver"
+                });
+                setShowRatingScreen(true);
+              } else {
+                setActiveRide(null);
+                setIsSearching(false);
+              }
             }
           }
         }
+      } catch (error) {
+        console.error("Error syncing driver live location:", error);
       }
-    } catch (error) {
-      console.error("Error syncing driver live location:", error);
+    };
+
+    if (isSearching || (activeRide && activeRide.status !== "completed")) {
+      fetchRideAndDriverStatus();
+      intervalId = setInterval(fetchRideAndDriverStatus, 3000);
     }
-  };
 
-  // Setup polling interval securely
-  if (isSearching || (activeRide && activeRide.status !== "completed")) {
-    fetchRideAndDriverStatus();
-    intervalId = setInterval(fetchRideAndDriverStatus, 3000);
-  }
-
-  return () => {
-    if (intervalId) clearInterval(intervalId);
-  };
-}, [isSearching, activeRide?.status, showRatingScreen]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isSearching, activeRide?.status, showRatingScreen]);
 
   const handleRatingSubmit = async () => {
     try {
@@ -321,10 +328,8 @@ useEffect(() => {
     } catch (error) {
       console.error("Network error submitting driver evaluation:", error);
     } finally {
-      // 1. Wipe out booking parameters saved in local storage to break any rendering loops
       localStorage.removeItem("pendingRideIntent");
   
-      // 2. Clear all tracking references completely
       isCompletedRef.current = false;
       currentRequestedRideIdRef.current = null;
       setShowRatingScreen(false);
@@ -332,15 +337,7 @@ useEffect(() => {
       setDriverToRate({ id: null, name: "" });
       setRating(5);
   
-      // 3. Clear location/input states if they are accessible within this component context
-      if (typeof setPickup === "function") setPickup("");
-      if (typeof setDrop === "function") setDrop("");
-  
-      // 4. Force route path straight back to clean home view
-      // Using replace: true alters window history so clicking "Back" won't bug the UI
       navigate("/", { replace: true });
-  
-      // 5. Hard reset guarantee: Completely purges residual state trees in memory
       window.location.reload();
     }
   };
@@ -378,9 +375,6 @@ useEffect(() => {
     iconSize: [40, 40],
   });
 
-  // =========================================================================
-  // INTERCEPTOR LAYER 1: Post-Trip Driver Rating Screen (HIGHEST PRIORITY)
-  // =========================================================================
   if (showRatingScreen) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#f3f4f6" }}>
@@ -421,9 +415,6 @@ useEffect(() => {
     );
   }
 
-  // =========================================================================
-  // INTERCEPTOR LAYER 2: Active Realtime Tracking Screen (EXCLUDING 'completed')
-  // =========================================================================
   if (activeRide && activeRide.status !== "pending" && activeRide.status !== "completed") {
     return (
       <div className="rider-tracking-wrapper" style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -523,9 +514,6 @@ useEffect(() => {
     );
   }
 
-  // =========================================================================
-  // STANDARD SELECTION & SEARCHING MARKUP (FALLBACK BASELINE)
-  // =========================================================================
   return (
     <div className={`rider-home-wrapper ${isSearching ? "mode-searching" : "mode-selection"}`}>
       <Navbar />
