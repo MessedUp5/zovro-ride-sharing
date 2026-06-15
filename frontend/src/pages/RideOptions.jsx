@@ -230,10 +230,10 @@ useEffect(() => {
             return;
           }
           // 🟢 INTERCEPT COMPLETION SECURELY
-          if (data.ride.status === "completed" && !isCompletedRef.current) {
+          if (data.ride.status === "completed" && !isCompletedRef.current && !isSearching) {
             console.log("Ride completion captured successfully!", data.ride);
             isCompletedRef.current = true; 
-            clearInterval(intervalId);   
+            if (intervalId) clearInterval(intervalId);  
       
             setDriverToRate({
               id: data.ride.driver_uid, 
@@ -262,7 +262,7 @@ useEffect(() => {
             if (activeRide.status === "ongoing") {
               console.log("Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
               isCompletedRef.current = true;
-              clearInterval(intervalId);
+              if (intervalId) clearInterval(intervalId);
               
               setDriverToRate({
                 id: activeRide.driver_uid,
