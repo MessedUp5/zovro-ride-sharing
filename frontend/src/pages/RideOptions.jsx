@@ -104,7 +104,6 @@ function RideOptions(props) {
   const handleRideRequest = async () => {
     isCompletedRef.current = false; 
     setActiveRide(null);
-    setIsSearching(true);
     const currentRide = rides.find(r => r.id === selectedRide);
 
     const rideData = {
@@ -135,6 +134,7 @@ function RideOptions(props) {
         if (data.ride && data.ride.id) {
           currentRequestedRideIdRef.current = data.ride.id;
         }
+        setIsSearching(true);
       } else {
         alert("Failed to request ride: " + data.error);
         setIsSearching(false);
@@ -267,7 +267,7 @@ function RideOptions(props) {
             }
           } 
           else {
-            if (isSearching) {
+            if (isSearchingRef.current) {
               console.log("Backend returned no ride yet, maintaining pulsar animation state...");
               return; 
             }
