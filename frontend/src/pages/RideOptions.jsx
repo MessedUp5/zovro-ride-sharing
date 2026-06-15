@@ -39,6 +39,7 @@ function RideOptions(props) {
   const [rating, setRating] = useState(5); 
 
   // Track completion state cleanly to protect loops
+  const currentRequestedRideIdRef = useRef(null);
   const isCompletedRef = useRef(false);
 
   // Haversine fallback formula
@@ -124,6 +125,9 @@ function RideOptions(props) {
       
       if (response.ok) {
         console.log("Ride saved to DB:", data.ride);
+        if (data.ride && data.ride.id) {
+          currentRequestedRideIdRef.current = data.ride.id;
+        }
       } else {
         alert("Failed to request ride: " + data.error);
         setIsSearching(false);
@@ -219,11 +223,17 @@ useEffect(() => {
         const data = await response.json();
         
         if (data.ride) {
+          const backendRideId = data.ride.id || data.ride.ride_id;
+
+          if (isSearching && currentRequestedRideIdRef.current && backendRideId !== currentRequestedRideIdRef.current) {
+            console.log("Skipping stale historical database entry. Waiting for driver allocation...");
+            return;
+          }
           // 🟢 INTERCEPT COMPLETION SECURELY
           if (data.ride.status === "completed" && !isCompletedRef.current) {
-            console.log("🎯 Ride completion captured successfully!", data.ride);
+            console.log("Ride completion captured successfully!", data.ride);
             isCompletedRef.current = true; 
-            clearInterval(intervalId);     
+            clearInterval(intervalId);   
       
             setDriverToRate({
               id: data.ride.driver_uid, 
@@ -244,13 +254,13 @@ useEffect(() => {
           // If backend returns null, but we are actively waiting for a match (isSearching is true),
           // DO NOT clear out the states or kill the pulsar effect.
           if (isSearching) {
-            console.log("⏳ Backend returned no ride yet, keeping pulsar animation spinning...");
+            console.log("Backend returned no ride yet, keeping pulsar animation spinning...");
             return; 
           }
 
           if (activeRide && !isCompletedRef.current) {
             if (activeRide.status === "ongoing") {
-              console.log("⚠️ Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
+              console.log("Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
               isCompletedRef.current = true;
               clearInterval(intervalId);
               
@@ -310,6 +320,7 @@ useEffect(() => {
   
       // 2. Clear all tracking references completely
       isCompletedRef.current = false;
+      currentRequestedRideIdRef.current = null;
       setShowRatingScreen(false);
       setActiveRide(null); 
       setDriverToRate({ id: null, name: "" });
