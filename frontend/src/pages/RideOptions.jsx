@@ -97,6 +97,7 @@ function RideOptions(props) {
   // Handle Request Fire
   const handleRideRequest = async () => {
     isCompletedRef.current = false; 
+    setActiveRide(null);
     setIsSearching(true);
     const currentRide = rides.find(r => r.id === selectedRide);
 
