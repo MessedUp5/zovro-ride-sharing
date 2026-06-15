@@ -204,7 +204,7 @@ function RideOptions(props) {
     };
   }, [isSearching]);
 
-// Live Location Sync Polling Effect Loop - FIXED
+// Live Location Sync Polling Effect Loop - FIXED STATE DROPOUT
 useEffect(() => {
   let intervalId;
 
@@ -223,18 +223,20 @@ useEffect(() => {
       if (response.ok) {
         const data = await response.json();
         
-        if (data.ride) {
+        // CASE 1: Backend found an active or pending ride match
+        if (data && data.ride) {
           const backendRideId = data.ride.id || data.ride.ride_id;
 
           if (isSearching && currentRequestedRideIdRef.current && backendRideId !== currentRequestedRideIdRef.current) {
             console.log("Skipping stale historical database entry. Waiting for driver allocation...");
             return;
           }
-          // 🟢 INTERCEPT COMPLETION SECURELY
+
+          // Capture Trip Completion Explicitly
           if (data.ride.status === "completed" && !isCompletedRef.current && !isSearching) {
-            console.log("Ride completion captured successfully!", data.ride);
+            console.log("Ride completion captured successfully!");
             isCompletedRef.current = true; 
-            if (intervalId) clearInterval(intervalId);  
+            if (intervalId) clearInterval(intervalId);   
       
             setDriverToRate({
               id: data.ride.driver_uid, 
@@ -244,21 +246,24 @@ useEffect(() => {
             setShowRatingScreen(true);
             setActiveRide(data.ride); 
             setIsSearching(false);
-          } else if (!isCompletedRef.current) {
-            setActiveRide(data.ride); 
-            if (data.ride.status !== "pending") {
-              setIsSearching(false); 
-            }
+            return;
           }
-        } else {
-          // 🟢 SAFEGUARD FALLBACK CRITICAL FIX
-          // If backend returns null, but we are actively waiting for a match (isSearching is true),
-          // DO NOT clear out the states or kill the pulsar effect.
+
+          // Normal Tracking Update
+          setActiveRide(data.ride); 
+          if (data.ride.status !== "pending") {
+            setIsSearching(false); // Turn off pulsar only when driver accepts
+          }
+        } 
+        // CASE 2: Backend returned no active ride data (null or empty)
+        else {
+          // 🟢 HARD LOCK: If we are actively searching, do NOT drop out to selection screen!
           if (isSearching) {
-            console.log("Backend returned no ride yet, keeping pulsar animation spinning...");
+            console.log("Backend returned no ride yet, maintaining pulsar animation state...");
             return; 
           }
 
+          // Handle mid-trip dropouts safely
           if (activeRide && !isCompletedRef.current) {
             if (activeRide.status === "ongoing") {
               console.log("Active ride missing from endpoint payload but was ongoing. Forcing rating layer fallback.");
@@ -282,7 +287,7 @@ useEffect(() => {
     }
   };
 
-  // Only set up interval if we are searching or have an in-progress ride
+  // Setup polling interval securely
   if (isSearching || (activeRide && activeRide.status !== "completed")) {
     fetchRideAndDriverStatus();
     intervalId = setInterval(fetchRideAndDriverStatus, 3000);
