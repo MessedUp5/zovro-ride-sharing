@@ -76,7 +76,9 @@ function DriverHome() {
           }
         },
         (err) => console.error("Position Error:", err),
-        { enableHighAccuracy: true, distanceFilter: 10 }
+        { enableHighAccuracy: true, 
+          timeout: 5000, 
+          maximumAge: 0 }
       );
     }
 
