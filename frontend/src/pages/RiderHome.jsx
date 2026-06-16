@@ -510,6 +510,7 @@ setCurrentLocation(fullLocation);
   </div>
 )}
         {showMap && (
+          <div className="map-modal-wrapper">
           <div className="right-panel">
             <MapContainer
               center={[6.9271, 79.8612]}
@@ -596,7 +597,7 @@ setCurrentLocation(fullLocation);
         Confirm Location
       </button>
     </div>
-            
+    </div>
           </div>
         )}
       </div>

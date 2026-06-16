@@ -12,17 +12,17 @@ body {
 }
 
 .rider-container {
-    min-height: 100vh;
-    background-color: #f3f3f3; 
-    padding: 100px 20px 20px;
-    display: flex;
-    justify-content: flex-start;
-    width: 100vw;
+  min-height: 100vh;
+  background-color: #f3f3f3; 
+  padding: 100px 20px 20px;
+  display: flex;
+  justify-content: flex-start;
+  width: 100vw;
   overflow: hidden;
   position: relative;
-  }
+}
   
-  .request-card {
+.request-card {
   background: white;
   padding: 40px;
   border-radius: 16px;
@@ -31,37 +31,36 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  }
+}
   
-  .location-badge {
+.location-badge {
   font-size: 13px;
   font-weight: 600;
-  }
+}
   
-  .request-card h1 {
+.request-card h1 {
   font-size: 32px;
   font-weight: 700;
-  }
+}
   
-  .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 25px;
-  }
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+}
 
-  .input-wrapper {
-    position: relative;
-    width: 100%;
-  }
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
   
-  .input-wrapper input {
-    width: 100%;
-    padding-right: 35px;
-  }
+.input-wrapper input {
+  width: 100%;
+  padding-right: 35px;
+}
   
-  
-  .input-group input {
+.input-group input {
   width: 100%;
   box-sizing: border-box;
   padding: 16px;
@@ -69,15 +68,15 @@ body {
   border: 1px solid #eeeeee;
   border-radius: 8px;
   font-size: 16px;
-  }
+}
   
-  .input-group input:focus {
-    outline: none;
-    border-color: #000;
-    background: #fff;
-  }
+.input-group input:focus {
+  outline: none;
+  border-color: #000;
+  background: #fff;
+}
   
-  .request-btn {
+.request-btn {
   width: 100%;
   padding: 18px;
   background: #000;
@@ -88,91 +87,91 @@ body {
   cursor: pointer;
   margin-top: auto;
   font-size: 18px;
-  }
+}
   
-  .request-btn:hover {
-    background-color: #333;
-  }
+.request-btn:hover {
+  background-color: #333;
+}
   
-  .request-btn:disabled {
-    background: #ccc;
-  }
+.request-btn:disabled {
+  background: #ccc;
+}
   
-  .status-message {
-    margin-top: 15px;
-    text-align: center;
-    font-size: 14px;
-    color: #666;
-  }
+.status-message {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
 
-  .dropdown {
-    position: absolute;
-    top: 50px;
-    left: 0;
-    right: 0;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    max-height: 250px;
-    overflow-y: auto;
-    z-index: 999;
-  }
+.dropdown {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 999;
+}
   
-  .dropdown-item {
-    padding: 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #eee;
-  }
+.dropdown-item {
+  padding: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
   
-  .dropdown-item:hover {
-    background: #f5f5f5;
-  }
+.dropdown-item:hover {
+  background: #f5f5f5;
+}
 
-  .map-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+.map-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  .clear-btn {
-    position: absolute;
-    right: 8px;
-    top: 42%;
-    transform: translateY(-50%);
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #000;
-    color: #fff;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    cursor: pointer;
-    transition: 0.2s;
-  }
+.clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 42%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
   
-  .clear-btn:hover {
-    background: #333;
-  }
+.clear-btn:hover {
+  background: #333;
+}
   
-  .map-container {
-    display: flex;
-    flex-direction: column;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
+.map-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow-y: auto;
+}
   
-  .close-btn {
-    position: absolute;
+.close-btn {
+  position: absolute;
   top: 15px;
   right: 15px;
   z-index: 1000;
@@ -182,9 +181,9 @@ body {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  }
+}
   
-  .rider-layout {
+.rider-layout {
   display: flex;
   flex: 1;
   align-items: flex-start;     
@@ -193,17 +192,17 @@ body {
   padding: 40px 80px;
   width: 100%;
   box-sizing: border-box;
-  }
+}
   
-  .left-panel {
+.left-panel {
   width: 100%; 
   max-width: 500px; 
   height: 450px; 
   display: flex;
   flex-shrink: 0;
-  }
+}
   
-  .right-panel {
+.right-panel {
   flex: 1; 
   width: 600px; 
   height: 450px;
@@ -212,27 +211,27 @@ body {
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   position: relative; 
-  }
+}
   
-  .rider-layout .left-panel {
-    width: 40%;
-  }
+.rider-layout .left-panel {
+  width: 40%;
+}
 
-  .leaflet-container {
+.leaflet-container {
   height: 100% !important;
   width: 100% !important;
-  }
+}
 
-  .rider-home-wrapper {
+.rider-home-wrapper {
   min-height: 100vh;
   display: flex;
   flex-direction: column; 
   overflow-y: auto;
   background-color: #f3f3f3;
-  }
+}
 
-  .map-placeholder {
-    height: 100%;
+.map-placeholder {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -241,9 +240,9 @@ body {
   padding: 40px;
   background: #fff;
   font-size: 18px;
-  }
+}
 
-  /* Hero Section Container */
+/* Hero Section Container */
 .hero-section {
   padding: 170px 20px;
   text-align: center;
@@ -251,7 +250,7 @@ body {
 }
 
 .hero-content h1 {
-  font-size: 64px; /* Large bold heading like the image */
+  font-size: 64px; 
   font-weight: 800;
   color: #000;
   margin-bottom: 20px;
@@ -273,9 +272,9 @@ body {
   gap: 15px;
 }
 
-/* Primary Button (Green Style) */
+/* Primary Button */
 .btn-primary {
-  background-color: #3269bb; /* Bolt green */
+  background-color: #3269bb; 
   color: white;
   border: 2px solid #3269bb;
   padding: 14px 32px;
@@ -290,7 +289,7 @@ body {
   background-color: #283fa7;
 }
 
-/* Secondary Button (Grey Style) */
+/* Secondary Button */
 .btn-secondary {
   background-color: #eeeeee;
   color: #000;
@@ -302,72 +301,178 @@ body {
   cursor: pointer;
 }
 
-
 /* ==========================================
-   MOBILE & RESPONSIVE LAYOUT FIXES
+   UPDATED MOBILE & RESPONSIVE LAYOUT FIXES
    ========================================== */
+@media (max-width: 768px) {
+  .rider-home-wrapper {
+    overflow-x: hidden;
+    overflow-y: auto !important; 
+    width: 100vw;
+    height: auto;
+  }
 
-   @media (max-width: 768px) {
-    /* Prevent horizontal scrolling on mobile viewports */
-    .rider-home-wrapper {
-      overflow-x: hidden;
-      width: 100vw;
-    }
+  .hero-section {
+    padding: 100px 20px 40px;
+  }
+
+  .hero-content h1 {
+    font-size: 36px;
+    letter-spacing: -0.5px;
+  }
+
+  .hero-content p {
+    font-size: 15px;
+  }
+
+  .rider-layout {
+    flex-direction: column;
+    padding: 20px 15px;
+    gap: 20px;
+    height: auto;
+  }
+
+  .rider-layout .left-panel,
+  .left-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .right-panel {
+    position: relative !important; 
+    top: auto;
+    left: auto;
+    width: 100% !important;
+    height: 400px !important; 
+    max-width: 100% !important;
+    border-radius: 12px !important; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    z-index: 500 !important; 
+  }
+
+  .clear-btn {
+    top: 50%;
+    right: 12px;
+  }
+
+  /* ==========================================
+     MODAL LAYOUT SYSTEM OVERRIDES
+     ========================================== */
   
-    /* Shrink hero typography to fit mobile viewports */
-    .hero-section {
-      padding: 100px 20px 40px;
-    }
-  
-    .hero-content h1 {
-      font-size: 36px;
-      letter-spacing: -0.5px;
-    }
-  
-    .hero-content p {
-      font-size: 15px;
-    }
-  
-    /* Wrap desktop side-by-side components into a single column layout */
-    .rider-layout {
-      flex-direction: column;
-      padding: 20px 15px;
-      gap: 20px;
-    }
-  
-    /* Expand panels to occupy the full width of the mobile viewport */
-    .rider-layout .left-panel,
-    .left-panel {
-      width: 100% !important;
-      max-width: 100% !important;
-      height: auto !important;
-    }
-  
-    /* Make the map modal card fill the screen when active */
-    .right-panel {
+     .map-modal-wrapper {
       position: fixed !important;
-      top: 0;
-      left: 0;
+      top: 0 !important;
+      left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
-      max-width: 100vw !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      z-index: 10000 !important; /* Forces layout layers above the header navigation */
+      background: rgba(0, 0, 0, 0.5) !important;
+      z-index: 999999 !important; /* Forces layout to sit above headers, footer, and sidebars */
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      padding: 16px !important;
+      box-sizing: border-box !important;
     }
-  
-    /* Explicitly size Leaflet layers inside full-screen containers */
-    .leaflet-container {
+
+    .map-modal-wrapper .right-panel {
+      position: relative !important;
+      width: 100% !important;
+      height: 80vh !important; /* Restricts height dimensions so viewport limits aren't clipped */
+      max-height: 80vh !important;
+      border-radius: 20px !important;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+      margin: 0 !important;
+    }
+
+    .map-modal-wrapper .leaflet-container {
       width: 100% !important;
       height: 100% !important;
       position: absolute !important;
-      top: 0;
-      left: 0;
+      top: 0 !important;
+      left: 0 !important;
     }
-  
-    /* Adjust placement of clear text input buttons */
-    .clear-btn {
-      top: 50%;
-      right: 12px;
-    }
+  /* Forces modal to completely lock over the phone viewport */
+  .map-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    z-index: 999999 !important; /* Stacked above all view navigation markup */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
   }
+
+  /* White modal popup layout container box card */
+  .map-modal .map-container {
+    position: relative !important;
+    width: 100% !important;
+    height: 85vh !important; /* Fixed viewport height prevents content cutting off */
+    max-height: 85vh !important;
+    background: white !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Force Leaflet tile system canvas map to safely fill container spaces */
+  .map-modal .map-container .leaflet-container,
+  .map-modal .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 1 !important;
+  }
+
+  /* Close text button styling wrapper placement */
+  .map-modal .close-btn {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    z-index: 9999 !important; /* Forced visibility on top of leaflet maps */
+    padding: 10px 20px !important;
+    background: white !important;
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    color: #000 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  }
+
+  /* FIX: Targets the confirm button inside the modal and places it at the bottom */
+  .map-modal .request-btn,
+  .map-modal .map-container button:not(.close-btn),
+  .map-modal button:not(.close-btn) {
+    position: absolute !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    right: 20px !important;
+    width: calc(100% - 40px) !important;
+    height: 54px !important;
+    z-index: 9999 !important; /* Stay layered cleanly over active map markers */
+    margin: 0 !important;
+    background: #000 !important;
+    color: #fff !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+  }
+}

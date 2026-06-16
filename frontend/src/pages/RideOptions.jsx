@@ -203,7 +203,7 @@ function RideOptions(props) {
     getTrackingRouteAndETA();
   }, [activeRide?.driver_current_lat, activeRide?.driver_current_lng, activeRide?.status]);
 
-  // 🟢 FIXED SAFE UNMOUNT SYNC CLEANUP (Runs ONLY when completely leaving the DOM layout)
+  // 🟢 FIXED SAFE UNMOUNT SYNC CLEANUP
   useEffect(() => {
     return () => {
       if (isSearchingRef.current) {
@@ -217,7 +217,7 @@ function RideOptions(props) {
         }).catch(err => console.error("Automated teardown error:", err));
       }
     };
-  }, []); // Bound strictly to true unmount lifecycle
+  }, []); 
 
   // Live Location Sync Polling Effect Loop
   useEffect(() => {
@@ -419,55 +419,11 @@ function RideOptions(props) {
     return (
       <div className="rider-tracking-wrapper" style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
         <Navbar />
-        <div style={{ display: "flex", flex: 1, height: "calc(100vh - 70px)", overflow: "hidden" }}>
+        {/* Added wrapper class to cleanly decouple mobile layouts */}
+        <div className="tracking-container-layout" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           
-          {/* Left Panel */}
-          <div style={{ width: "360px", padding: "24px", background: "#ffffff", boxShadow: "4px 0 20px rgba(0,0,0,0.1)", zIndex: 10, display: "flex", flexDirection: "column" }}>
-            <div>
-              <h2 style={{ fontSize: "24px", fontWeight: "800", color: "#111", margin: "0 0 10px 0" }}>
-                {activeRide.status === "accepted" && "Driver is coming!"}
-                {activeRide.status === "arrived" && "Driver has arrived!"}
-                {activeRide.status === "ongoing" && "Trip is Active"}
-              </h2>
-              
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "20px" }}>
-                <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700", textTransform: "uppercase" }}>
-                  Status: {activeRide.status}
-                </span>
-
-                {etaMinutes !== null && activeRide.status !== "arrived" && (
-                  <span style={{ background: "#f0fdf4", color: "#16a34a", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700" }}>
-                       ETA: {etaMinutes} mins
-                  </span>
-                )}
-              </div>
-
-              <div style={{ marginTop: "24px", padding: "18px", background: "#f8f9fa", borderRadius: "12px", border: "1px solid #eee" }}>
-                <h3 style={{ margin: "0 0 4px 0", fontSize: "18px" }}> {activeRide.driver_name || "Your Assigned Driver"}</h3>
-                <p style={{ margin: "0 0 10px 0", color: "#666" }}> {activeRide.driver_phone || "Contact via system"}</p>
-                <hr style={{ border: "0", borderTop: "1px solid #eef", margin: "10px 0" }} />
-                <p style={{ margin: "0", fontSize: "15px", fontWeight: "600", color: "#222" }}>
-                  Fare Protection: <span style={{ color: "#16a34a" }}>LKR {activeRide.fare_lkr}</span>
-                </p>
-              </div>
-              
-              <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <p style={{ fontSize: "14px", margin: "0" }}> <strong>Pickup:</strong> {pickup}</p>
-                <p style={{ fontSize: "14px", margin: "0" }}> <strong>Drop:</strong> {drop}</p>
-              </div>
-            </div>
-
-            <button 
-              className="cancel-request-btn" 
-              style={{ marginTop: "auto", width: "100%", padding: "14px", borderRadius: "8px", background: "#ef4444", color: "#fff", border: "none", fontWeight: "bold", cursor: "pointer" }}
-              onClick={handleCancelRide}
-            >
-              Cancel Trip
-            </button>
-          </div>
-
-          {/* Right Panel */}
-          <div style={{ flex: 1, position: "relative" }}>
+          {/* MAP INTERFACE RENDERS FIRST NOW */}
+          <div className="tracking-map-panel" style={{ flex: 1, position: "relative" }}>
             <MapContainer 
               key={`active-map-${activeRide?.driver_current_lat || 'initial'}`}
               center={[pickupLat, pickupLng]} 
@@ -507,6 +463,51 @@ function RideOptions(props) {
                 </Marker>
               )}
             </MapContainer>
+          </div>
+
+          {/* DETAILS PANEL RENDERS SECOND */}
+          <div className="tracking-details-panel">
+            <div className="panel-scroll-content">
+              <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#111", margin: "0 0 10px 0" }}>
+                {activeRide.status === "accepted" && "Driver is coming!"}
+                {activeRide.status === "arrived" && "Driver has arrived!"}
+                {activeRide.status === "ongoing" && "Trip is Active"}
+              </h2>
+              
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px" }}>
+                <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700", textTransform: "uppercase" }}>
+                  Status: {activeRide.status}
+                </span>
+
+                {etaMinutes !== null && activeRide.status !== "arrived" && (
+                  <span style={{ background: "#f0fdf4", color: "#16a34a", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700" }}>
+                       ETA: {etaMinutes} mins
+                  </span>
+                )}
+              </div>
+
+              <div style={{ padding: "16px", background: "#f8f9fa", borderRadius: "12px", border: "1px solid #eee" }}>
+                <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "700" }}> {activeRide.driver_name || "Your Assigned Driver"}</h3>
+                <p style={{ margin: "0 0 10px 0", color: "#666", fontSize: "14px" }}> {activeRide.driver_phone || "Contact via system"}</p>
+                <hr style={{ border: "0", borderTop: "1px solid #eef", margin: "10px 0" }} />
+                <p style={{ margin: "0", fontSize: "14px", fontWeight: "600", color: "#222" }}>
+                  Fare Protection: <span style={{ color: "#16a34a" }}>LKR {activeRide.fare_lkr}</span>
+                </p>
+              </div>
+              
+              <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <p style={{ fontSize: "13px", margin: "0", color: "#444" }}> <strong>Pickup:</strong> {pickup}</p>
+                <p style={{ fontSize: "13px", margin: "0", color: "#444" }}> <strong>Drop:</strong> {drop}</p>
+              </div>
+            </div>
+
+            <button 
+              className="cancel-request-btn" 
+              style={{ width: "100%", padding: "14px", borderRadius: "8px", background: "#ef4444", color: "#fff", border: "none", fontWeight: "bold", cursor: "pointer", marginTop: "12px" }}
+              onClick={handleCancelRide}
+            >
+              Cancel Trip
+            </button>
           </div>
 
         </div>
