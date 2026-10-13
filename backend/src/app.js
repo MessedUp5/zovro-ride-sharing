@@ -14,6 +14,7 @@ app.use(cors({
 
 app.use(express.json({ limit: "1mb" }));
 app.use("/api/auth", require("./modules/auth/auth.routes"));
+app.use("/api/journeys", require("./modules/journeys/journeys.routes"));
 
 
 app.get("/api/health", async (_req, res) => {
