@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev:community": "node --watch src/server.js",
-    "dev:legacy": "node --watch index.js"
+    "dev:legacy": "node --watch index.js",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -23,5 +24,9 @@
     "mysql2": "^3.22.3",
     "pg": "^8.20.0",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0"
   }
 }
